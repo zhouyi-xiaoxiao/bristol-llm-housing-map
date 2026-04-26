@@ -76,7 +76,6 @@ function ListingCard({
       ref={cardRef}
       id={`listing-${listing.id}`}
       className={`listingCard ${active ? "activeCard" : ""} ${listing.borderline ? "borderlineCard" : ""}`}
-      onMouseEnter={() => onSelect(listing.id, { scroll: false })}
     >
       <div className="cardHeader">
         <div>
