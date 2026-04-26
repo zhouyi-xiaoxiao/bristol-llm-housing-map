@@ -78,8 +78,10 @@ function popupHtml(listing: Listing) {
 export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const markerLayerRef = useRef<L.LayerGroup | null>(null);
   const markerRefs = useRef<Record<string, L.Marker>>({});
+  const [tilesEnabled, setTilesEnabled] = useState(false);
   const [tileFailed, setTileFailed] = useState(false);
 
   const bounds = useMemo(() => {
@@ -99,13 +101,6 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
       zoomControl: true,
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    })
-      .on("tileerror", () => setTileFailed(true))
-      .addTo(map);
-
     L.marker([destination.lat, destination.lng], { icon: schoolIcon(), zIndexOffset: 2000 })
       .bindPopup(
         `<div class="leafletPopup"><p class="popupKicker">Destination</p><strong>${destination.name}</strong><p>${destination.address}</p></div>`,
@@ -121,10 +116,35 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
     return () => {
       map.remove();
       mapRef.current = null;
+      tileLayerRef.current = null;
       markerLayerRef.current = null;
       markerRefs.current = {};
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (!tilesEnabled) {
+      tileLayerRef.current?.remove();
+      tileLayerRef.current = null;
+      setTileFailed(false);
+      return;
+    }
+
+    if (tileLayerRef.current) return;
+
+    const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    })
+      .on("tileerror", () => setTileFailed(true))
+      .addTo(map);
+
+    tileLayerRef.current = tileLayer;
+    setTileFailed(false);
+  }, [tilesEnabled]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -187,15 +207,18 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
   }, [listings.length]);
 
   return (
-    <div className={`leafletShell ${tileFailed ? "tileFailed" : ""}`}>
+    <div className={`leafletShell ${tilesEnabled ? "tilesEnabled" : "localMap"} ${tileFailed ? "tileFailed" : ""}`}>
       <div className="mapFallback" aria-hidden="true">
         <span>Clifton</span>
         <span>City Centre</span>
         <span>Harbourside</span>
         <span>Temple / Redcliffe</span>
-        <em>Map tiles unavailable · markers still work</em>
+        <em>{tilesEnabled && tileFailed ? "Map tiles unavailable · markers still work" : "Local map default · China-friendly"}</em>
       </div>
       <div ref={containerRef} className="leafletMap" aria-label="Interactive Bristol housing map" />
+      <button className="tileToggle" type="button" onClick={() => setTilesEnabled((value) => !value)}>
+        {tilesEnabled ? "关闭街道瓦片" : "加载 OSM 街道层"}
+      </button>
     </div>
   );
 }

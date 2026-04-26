@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  applicationLinks,
   appleMapsUrl,
   categories,
   googleMapsUrl,
@@ -256,6 +257,67 @@ function SourceAudit() {
   );
 }
 
+function ApplicationGuide() {
+  return (
+    <section className="applicationBand" id="apply">
+      <div className="sectionLead">
+        <p className="kicker">Official application</p>
+        <h2>大学官方住宿怎么申请</h2>
+        <p>
+          给 single / unaccompanied LLM：官方住宿不是直接在每个 residence 页面单独下单，而是先接受 Bristol
+          study offer，拿 student number，再进 Accommodation Portal 填申请和偏好。
+        </p>
+      </div>
+
+      <div className="applicationGrid">
+        <article className="applicationCard primaryApplyCard">
+          <p className="kicker">Single applicant route</p>
+          <h3>先走 Accommodation Portal</h3>
+          <ol>
+            <li>接受 University of Bristol 的课程 offer；PG 申请者通常要先 firm/accept study offer。</li>
+            <li>等学生号生效，官方说可能需要最多 3 天后才能申请住宿。</li>
+            <li>用 student number 和申请大学时的同一邮箱注册 Accommodation Portal。</li>
+            <li>在 portal 里填预算、room type、flat type、location、top three residences 等偏好。</li>
+            <li>收到 accommodation offer 后，仍在 portal 里签 tenancy agreement；PG 可能还要付部分 advance rent。</li>
+          </ol>
+        </article>
+
+        <article className="applicationCard deadlineCard">
+          <p className="kicker">2026 entry dates</p>
+          <h3>关键日期</h3>
+          <dl className="deadlineFacts">
+            <div>
+              <dt>开放申请</dt>
+              <dd>8 April 2026</dd>
+            </div>
+            <div>
+              <dt>Guarantee deadline</dt>
+              <dd>30 June 2026</dd>
+            </div>
+            <div>
+              <dt>PG response</dt>
+              <dd>30 June 前申请：通常 within two weeks</dd>
+            </div>
+          </dl>
+          <p>
+            官方 guarantee 对 overseas-fee、first-year、new full-time postgraduate、unaccompanied
+            申请者更友好；如果是 single 状态，不要把 family/couples accommodation 当作主要方案。
+          </p>
+        </article>
+      </div>
+
+      <div className="applicationLinks">
+        {applicationLinks.map((link) => (
+          <a href={link.url} target="_blank" rel="noreferrer" key={link.url}>
+            <strong>{link.label}</strong>
+            <span>{link.note}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [category, setCategory] = useState<Filter>("all");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
@@ -309,7 +371,7 @@ export default function App() {
 
         <section className="heroGrid" id="top">
           <div className="heroCopy">
-            <p className="kicker">Bristol LLM Housing Edit / Last checked 26 April 2026</p>
+            <p className="kicker">Bristol LLM Housing Edit / Last checked 27 April 2026</p>
             <h1>
               Bristol
               <em> LLM housing</em>
@@ -323,6 +385,7 @@ export default function App() {
             <div className="heroActions">
               <a href="#map">看地图</a>
               <a href="#listings">看全部房源</a>
+              <a href="#apply">官方申请入口</a>
               <a href="#source-audit">看来源审计</a>
             </div>
           </div>
@@ -379,8 +442,8 @@ export default function App() {
           <p className="kicker">Interactive map · {visibleListings.length} visible</p>
           <h2>现在是能用的地图</h2>
           <p>
-            地图支持拖拽、缩放、点击编号 marker。默认加载 OpenStreetMap 瓦片；如果瓦片失败，底图会退回本地简化层，marker
-            仍然可点击，不会空白。
+            地图支持拖拽、缩放、点击编号 marker。默认使用本地简化底图，不依赖 Google、OSM 或任何 API key；需要街道细节时再手动加载
+            OpenStreetMap 增强层。
           </p>
         </div>
         <div className="mapShell">
@@ -391,6 +454,8 @@ export default function App() {
           <SelectedSummary selected={selected} selectedNumber={selectedNumber} />
         </div>
       </section>
+
+      <ApplicationGuide />
 
       <section className="listingBand" id="listings">
         <div className="sectionLead">

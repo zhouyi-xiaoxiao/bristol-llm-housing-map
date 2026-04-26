@@ -70,6 +70,7 @@ main {
 .heroGrid,
 .filterBand,
 .mapBand,
+.applicationBand,
 .listingBand,
 .tableBand,
 .auditBand,
@@ -248,6 +249,7 @@ footer {
 }
 
 .mapBand,
+.applicationBand,
 .listingBand,
 .tableBand,
 .auditBand,
@@ -370,6 +372,27 @@ footer {
 
 .leafletShell.tileFailed .leaflet-tile-pane {
   opacity: 0;
+}
+
+.tileToggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 500;
+  border: 1px solid rgba(23, 20, 17, 0.26);
+  background: rgba(255, 253, 248, 0.9);
+  padding: 8px 10px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 28px rgba(23, 20, 17, 0.08);
+}
+
+.tileToggle:hover {
+  background: var(--ink);
+  color: var(--paper-2);
 }
 
 .leaflet-container {
@@ -573,6 +596,92 @@ footer {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+.applicationGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.65fr);
+  gap: 16px;
+}
+
+.applicationCard {
+  border: 1px solid rgba(23, 20, 17, 0.16);
+  background: rgba(255, 253, 248, 0.68);
+  padding: clamp(18px, 3vw, 30px);
+  box-shadow: 0 22px 70px rgba(23, 20, 17, 0.07);
+}
+
+.primaryApplyCard {
+  border-top: 4px solid var(--ink);
+}
+
+.deadlineCard {
+  border-left: 4px solid var(--red);
+}
+
+.applicationCard h3 {
+  margin: 5px 0 18px;
+  font-family: var(--display);
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  font-weight: 500;
+  line-height: 0.95;
+}
+
+.applicationCard ol {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.applicationCard li,
+.applicationCard p {
+  color: var(--ink-2);
+  line-height: 1.75;
+}
+
+.deadlineFacts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.deadlineFacts div {
+  border-top: 1px solid rgba(23, 20, 17, 0.14);
+  padding-top: 10px;
+}
+
+.applicationLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.applicationLinks a {
+  border: 1px solid rgba(23, 20, 17, 0.14);
+  background: rgba(255, 253, 248, 0.52);
+  padding: 14px;
+}
+
+.applicationLinks strong,
+.applicationLinks span {
+  display: block;
+}
+
+.applicationLinks strong {
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.applicationLinks span {
+  margin-top: 8px;
+  color: var(--ink-2);
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
 
 .listingCard {
@@ -838,6 +947,7 @@ footer p {
   .heroGrid,
   .filterBand,
   .mapShell,
+  .applicationGrid,
   .sectionLead,
   .adviceBand,
   footer {
@@ -853,6 +963,10 @@ footer p {
   }
 
   .auditGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .applicationLinks {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -957,6 +1071,17 @@ footer p {
 
   .auditGrid {
     grid-template-columns: 1fr;
+  }
+
+  .applicationLinks {
+    grid-template-columns: 1fr;
+  }
+
+  .tileToggle {
+    max-width: 154px;
+    padding: 7px 8px;
+    font-size: 0.58rem;
+    text-align: left;
   }
 
   .tableWrap {

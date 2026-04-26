@@ -32,6 +32,12 @@ export type SourceAudit = {
   excluded: string[];
 };
 
+export type ApplicationLink = {
+  label: string;
+  url: string;
+  note: string;
+};
+
 export const categories: Record<CategoryId, { label: string; short: string }> = {
   university: { label: "大学官方", short: "University" },
   pbsa: { label: "学生公寓", short: "PBSA" },
@@ -56,6 +62,14 @@ export const verificationLinks = [
   {
     label: "University accommodation 2026/27 costs",
     url: "https://www.bristol.ac.uk/accommodation/about/costs/cost-by-residence/",
+  },
+  {
+    label: "Apply for University accommodation",
+    url: "https://www.bristol.ac.uk/accommodation/apply/",
+  },
+  {
+    label: "Accommodation Portal",
+    url: "https://bristol.starrezhousing.com/",
   },
   {
     label: "University PBSA provider list",
@@ -92,6 +106,39 @@ export function googleMapsUrl(origin: string) {
 
 const officialCostTable =
   "https://www.bristol.ac.uk/accommodation/about/costs/cost-by-residence/";
+
+export const applicationLinks: ApplicationLink[] = [
+  {
+    label: "Apply overview",
+    url: "https://www.bristol.ac.uk/accommodation/apply/",
+    note: "官方住宿申请总入口：先看 guarantee、key dates、terms，再进 portal。",
+  },
+  {
+    label: "Accommodation Portal",
+    url: "https://bristol.starrezhousing.com/",
+    note: "注册并填写住宿申请；之后也在这里查看/接受 offer。",
+  },
+  {
+    label: "How to apply",
+    url: "https://www.bristol.ac.uk/accommodation/apply/how-to-apply/",
+    note: "官方说明：需要 University of Bristol student number，并在 portal 里填写申请表。",
+  },
+  {
+    label: "Key dates",
+    url: "https://www.bristol.ac.uk/accommodation/apply/key-dates/",
+    note: "2026 入学：4 月 8 日开放申请；6 月 30 日前申请才满足 guarantee deadline。",
+  },
+  {
+    label: "Guarantee",
+    url: "https://www.bristol.ac.uk/accommodation/apply/guarantee/",
+    note: "海外费率、第一年、new full-time postgraduate、unaccompanied/single 等条件很关键。",
+  },
+  {
+    label: "Portal help",
+    url: "https://www.bristol.ac.uk/accommodation/contact/portal/",
+    note: "Portal 注册/登录/激活邮件问题；官方联系邮箱 student-accommodation@bristol.ac.uk。",
+  },
+];
 
 export const listings: Listing[] = [
   {
@@ -156,42 +203,22 @@ export const listings: Listing[] = [
     lng: -2.5954633,
   },
   {
-    id: "campus-houses",
-    category: "university",
-    name: "Campus Houses",
-    type: "1-bed flat, 多为 couple/family",
-    area: "BS2 8BW",
-    walk: "约 5 分钟",
-    walkMinutes: 5,
-    price: "£322/w, 51 周, 总 £16,422",
-    sourceUrl: "https://www.bristol.ac.uk/accommodation/about/residences/houses/",
-    sourceLabel: "University of Bristol",
-    sourceStatus: "verified",
-    sourceGroup: "University official",
-    origin: "St Michael's Park, St Michael's Hill, Bristol BS2 8BW",
-    note: "位置极好、官方、价格好；但官网定位偏 couple/family，单人 LLM 不一定能申请。",
-    priority: 4,
-    tags: ["官方", "近学校", "需确认资格"],
-    lat: 51.4595884,
-    lng: -2.6025884,
-  },
-  {
     id: "manor-hall",
     category: "university",
     name: "Manor Hall",
-    type: "Studio / 1-bed flat",
+    type: "Studio",
     area: "BS8 1BU",
     walk: "约 15 分钟",
     walkMinutes: 15,
-    price: "Studio £285.46/w; 1-bed £308/w",
+    price: "Studio £285.46/w",
     sourceUrl: "https://www.bristol.ac.uk/accommodation/about/residences/manor/",
     sourceLabel: "University of Bristol",
     sourceStatus: "verified",
     sourceGroup: "University official",
     origin: "Lower Clifton Hill, Bristol BS8 1BU",
-    note: "Clifton 位置好，价格很香；studio 偏 UG，1-bed 偏 couple/family，且楼体较老。",
+    note: "Clifton 位置好、价格友好；这里只保留 single 可申请的 studio 线索，其他非单人房型不作为推荐。",
     priority: 3,
-    tags: ["官方", "Clifton", "低价"],
+    tags: ["官方", "Clifton", "低价", "single"],
     lat: 51.4544677,
     lng: -2.6119654,
   },
@@ -260,19 +287,19 @@ export const listings: Listing[] = [
     id: "print-hall",
     category: "university",
     name: "Print Hall",
-    type: "Postgraduate studio / 1-bed couple flat",
+    type: "Postgraduate studio",
     area: "BS2 0BU",
     walk: "约 23-25 分钟",
     walkMinutes: 24,
-    price: "PG studio £299.74/w; 1-bed couple £328.16/w",
+    price: "PG studio £299.74/w",
     sourceUrl: "https://www.bristol.ac.uk/accommodation/about/costs/cost-by-residence/",
     sourceLabel: "University cost table",
     sourceStatus: "verified",
     sourceGroup: "University official",
     origin: "Print Hall, 1 Temple Way, Bristol BS2 0BU",
-    note: "官方 PG studio 数量多、价格好；但去 Wills 超过 20 分钟，作为边界备选。",
+    note: "官方 PG studio 数量相对多、价格好；其他非单人房型已排除。去 Wills 超过 20 分钟，作为边界备选。",
     priority: 3,
-    tags: ["官方", "PG", "边界备选"],
+    tags: ["官方", "PG", "single", "边界备选"],
     borderline: true,
     lat: 51.454979,
     lng: -2.5829766,
@@ -1049,14 +1076,15 @@ export const sourceAudit: SourceAudit[] = [
       "Marlborough House",
       "Orchard Heights",
       "The Courtrooms",
-      "Campus Houses",
-      "Manor Hall",
+      "Manor Hall studio only",
       "Clifton Hill House",
       "Winkworth House",
       "Richmond Terrace",
     ],
     borderline: ["Print Hall", "St Thomas Street"],
     excluded: [
+      "Campus Houses and University family/couples accommodation: excluded because this guide is for an unaccompanied single LLM applicant",
+      "Official 1-bed couple/family variants inside Print Hall / Manor Hall / Campus Houses: excluded from recommendations",
       "Stoke Bishop options such as Wills Hall, Churchill, Hiatt Baker, Badock, Durdham: outside the 20-minute walking target",
       "Langford and other non-city options: too far for Wills / Law School",
       "Shared en-suite or single-room only entries: outside Studio + 1B1B scope",
