@@ -17,7 +17,7 @@ type Filter = CategoryId | "all";
 type QuickFilter = "all" | "top" | "budget" | "oneBed" | "bills" | "borderline";
 
 const quickFilters: { id: QuickFilter; label: string }[] = [
-  { id: "all", label: "全部" },
+  { id: "all", label: "不限" },
   { id: "top", label: "Top picks" },
   { id: "budget", label: "预算友好" },
   { id: "oneBed", label: "1B1B" },
@@ -52,10 +52,10 @@ function matchesQuickFilter(listing: Listing, filter: QuickFilter) {
 }
 
 function sourceStatusLabel(listing: Listing) {
-  if (listing.sourceStatus === "verified") return "官方确认";
-  if (listing.sourceStatus === "provider") return "Provider";
-  if (listing.sourceStatus === "search") return "搜索页";
-  return "实时波动";
+  if (listing.sourceStatus === "verified") return "官方页面";
+  if (listing.sourceStatus === "provider") return "公寓官网";
+  if (listing.sourceStatus === "search") return "搜索页面";
+  return "实时房态";
 }
 
 function ListingCard({
@@ -145,7 +145,7 @@ function SelectedSummary({
       <aside className="mapAside">
         <p className="kicker">Selected</p>
         <h3>选择一个地图点</h3>
-        <p>点击地图上的编号 marker，右侧会显示路线、价格、来源和判断。</p>
+        <p>点击地图上的编号点，右侧会显示路线、价格、来源和判断。</p>
       </aside>
     );
   }
@@ -177,48 +177,46 @@ function SelectedSummary({
   );
 }
 
-function MobileSummaryStrip({
-  listings,
-  selectedId,
-  onSelect,
+function MobileDetailPanel({
+  selected,
+  selectedNumber,
 }: {
-  listings: Listing[];
-  selectedId: string;
-  onSelect: (id: string, options?: { scroll?: boolean }) => void;
+  selected?: Listing;
+  selectedNumber: number;
 }) {
-  const ordered = useMemo(() => {
-    const selected = listings.find((listing) => listing.id === selectedId);
-    const rest = listings.filter((listing) => listing.id !== selectedId);
-    return selected ? [selected, ...rest] : rest;
-  }, [listings, selectedId]);
+  if (!selected) {
+    return (
+      <section className="mobileDetailPanel" aria-live="polite">
+        <p className="kicker">Selected</p>
+        <p className="emptyHint">在地图上点击任一编号点，这里会显示路线、价格、来源和判断。</p>
+      </section>
+    );
+  }
 
   return (
-    <div className="mobileSummaryStrip" aria-label="Visible map listings">
-      {ordered.map((listing) => {
-        const index = listings.findIndex((item) => item.id === listing.id) + 1;
-        return (
-          <article
-            className={`mobileSummaryCard ${listing.id === selectedId ? "activeMobileSummary" : ""}`}
-            key={listing.id}
-            onClick={() => onSelect(listing.id, { scroll: false })}
-          >
-            <p className="kicker">
-              {index.toString().padStart(2, "0")} · {categories[listing.category].short}
-            </p>
-            <h3>{listing.name}</h3>
-            <p>{listing.walk} · {listing.price}</p>
-            <div className="summaryLinks">
-              <a href={appleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
-                Apple
-              </a>
-              <a href={googleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
-                Google
-              </a>
-            </div>
-          </article>
-        );
-      })}
-    </div>
+    <section className="mobileDetailPanel" aria-live="polite">
+      <p className="kicker">
+        Selected · {selectedNumber.toString().padStart(2, "0")} · {categories[selected.category].short}
+      </p>
+      <h3>{selected.name}</h3>
+      <p className="mobileNote">{selected.note}</p>
+      <div className="miniFacts">
+        <span>{selected.walk}</span>
+        <span>{selected.price}</span>
+        <span>{sourceStatusLabel(selected)}</span>
+      </div>
+      <div className="linkRow stackedLinks">
+        <a href={appleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
+          Apple Maps 步行路线
+        </a>
+        <a href={googleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
+          Google Maps 备用
+        </a>
+        <a href={selected.sourceUrl} target="_blank" rel="noreferrer">
+          来源 · {selected.sourceLabel}
+        </a>
+      </div>
+    </section>
   );
 }
 
@@ -227,9 +225,9 @@ function SourceAudit() {
     <section className="auditBand" id="source-audit">
       <div className="sectionLead">
         <p className="kicker">Source audit</p>
-        <h2>已遍历来源</h2>
+        <h2>数据来源核查</h2>
         <p>
-          这里记录纳入、边界保留和排除原因。大学官方和 PBSA provider 信息相对稳定；普通社会房源只作为实时搜索线索。
+          这里记录纳入、边界保留和排除的原因。大学官方和学生公寓官网信息相对稳定；普通社会房源只作为搜索线索，签约前请以最新官网/邮件回复为准。
         </p>
       </div>
       <div className="auditGrid">
@@ -371,7 +369,7 @@ export default function App() {
 
         <section className="heroGrid" id="top">
           <div className="heroCopy">
-            <p className="kicker">Bristol LLM Housing Edit / Last checked 27 April 2026</p>
+            <p className="kicker">Bristol LLM Housing · Last checked 27 April 2026</p>
             <h1>
               Bristol
               <em> LLM housing</em>
@@ -406,44 +404,49 @@ export default function App() {
       </header>
 
       <section className="filterBand" aria-label="Listing filters">
-        <div className="filterScroller">
-          <div className="filterGroup" aria-label="Category filters">
-            <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>
-              全部
-            </button>
-            {Object.entries(categories).map(([id, item]) => (
-              <button
-                key={id}
-                className={category === id ? "active" : ""}
-                onClick={() => setCategory(id as CategoryId)}
-              >
-                {item.label}
+        <div className="filterColumn">
+          <p className="filterLabel" id="filter-category-label">按类型</p>
+          <div className="filterScroller">
+            <div className="filterGroup" role="group" aria-labelledby="filter-category-label">
+              <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>
+                全部
               </button>
-            ))}
+              {Object.entries(categories).map(([id, item]) => (
+                <button
+                  key={id}
+                  className={category === id ? "active" : ""}
+                  onClick={() => setCategory(id as CategoryId)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="filterScroller">
-          <div className="filterGroup compact" aria-label="Quick filters">
-            {quickFilters.map((item) => (
-              <button
-                key={item.id}
-                className={quickFilter === item.id ? "active" : ""}
-                onClick={() => setQuickFilter(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
+        <div className="filterColumn">
+          <p className="filterLabel" id="filter-quick-label">快速标签</p>
+          <div className="filterScroller">
+            <div className="filterGroup compact" role="group" aria-labelledby="filter-quick-label">
+              {quickFilters.map((item) => (
+                <button
+                  key={item.id}
+                  className={quickFilter === item.id ? "active" : ""}
+                  onClick={() => setQuickFilter(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       <section className="mapBand" id="map">
         <div className="sectionLead">
-          <p className="kicker">Interactive map · {visibleListings.length} visible</p>
-          <h2>现在是能用的地图</h2>
+          <p className="kicker">Interactive map · {visibleListings.length} 个房源</p>
+          <h2>互动地图</h2>
           <p>
-            地图支持拖拽、滚轮/按钮缩放、点击编号 marker。默认加载在线真实街道图；如果瓦片加载失败，
-            会显示不含错误面图层的本地线性兜底，也可以手动切换到本地兜底。
+            地图支持拖拽、缩放和点击编号点。默认加载在线街道图；如果加载失败，会自动切换到一份不依赖网络的简化版地图，也可以手动切换。
           </p>
         </div>
         <div className="schoolNotice">
@@ -460,7 +463,7 @@ export default function App() {
         <div className="mapShell">
           <div className="mapArea">
             <MapView listings={visibleListings} selectedId={selectedId} onSelect={selectListing} />
-            <MobileSummaryStrip listings={visibleListings} selectedId={selectedId} onSelect={selectListing} />
+            <MobileDetailPanel selected={selected} selectedNumber={selectedNumber} />
           </div>
           <SelectedSummary selected={selected} selectedNumber={selectedNumber} />
         </div>

@@ -41,8 +41,8 @@ export type ApplicationLink = {
 export const categories: Record<CategoryId, { label: string; short: string }> = {
   university: { label: "大学官方", short: "University" },
   pbsa: { label: "学生公寓", short: "PBSA" },
-  su: { label: "Bristol SU Lettings", short: "SU" },
-  private: { label: "普通社会房源", short: "Private" },
+  su: { label: "学生会房源", short: "SU" },
+  private: { label: "社会房源", short: "Private" },
 };
 
 export const destination = {

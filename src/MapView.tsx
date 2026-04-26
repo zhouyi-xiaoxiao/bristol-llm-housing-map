@@ -228,21 +228,24 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
     return () => observer.disconnect();
   }, []);
 
+  // Effect A — rebuild markers only when listings change.
+  // IMPORTANT: do NOT add `selectedId` to these deps. Selection updates flow through
+  // Effect C (setIcon only). Adding selectedId here would re-run fitBounds (Effect B)
+  // on every click and reset the mobile view — the "second click jumps back to listing
+  // map" regression.
   useEffect(() => {
-    const map = mapRef.current;
     const layer = markerLayerRef.current;
-    if (!map || !layer) return;
+    if (!layer) return;
 
     layer.clearLayers();
     markerRefs.current = {};
 
     listings.forEach((listing, index) => {
-      const selected = listing.id === selectedId;
       const marker = L.marker([listing.lat, listing.lng], {
-        icon: markerIcon(index, listing, selected),
+        icon: markerIcon(index, listing, false),
         keyboard: true,
         title: listing.name,
-        zIndexOffset: selected ? 1200 : listing.borderline ? 0 : 300,
+        zIndexOffset: listing.borderline ? 0 : 300,
       })
         .bindPopup(popupHtml(listing), { closeButton: true, maxWidth: 260 })
         .on("click", () => onSelect(listing.id, { scroll: false }));
@@ -250,31 +253,46 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
       layer.addLayer(marker);
       markerRefs.current[listing.id] = marker;
     });
+  }, [listings, onSelect]);
 
-    if (listings.length > 0) {
-      map.fitBounds(bounds, {
-        padding: [34, 34],
-        maxZoom: listings.length <= 5 ? 15 : 14,
-        animate: false,
-      });
-    }
-  }, [bounds, listings, onSelect, selectedId]);
+  // Effect B — fit bounds only when the visible listings set changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || listings.length === 0) return;
+    map.fitBounds(bounds, {
+      padding: [34, 34],
+      maxZoom: listings.length <= 5 ? 15 : 14,
+      animate: false,
+    });
+  }, [listings, bounds]);
 
+  // Effect C — selection-only: update marker icons + smooth pan/zoom to selected.
+  // No clearLayers, no fitBounds — those belong to Effects A/B.
   useEffect(() => {
     const map = mapRef.current;
     const layer = markerLayerRef.current;
+    if (!map || !layer) return;
+
+    listings.forEach((listing, index) => {
+      const marker = markerRefs.current[listing.id];
+      if (!marker) return;
+      const isSelected = listing.id === selectedId;
+      marker.setIcon(markerIcon(index, listing, isSelected));
+      marker.setZIndexOffset(isSelected ? 1200 : listing.borderline ? 0 : 300);
+    });
+
     const marker = markerRefs.current[selectedId];
-    if (!map || !layer || !marker) return;
+    if (!marker) return;
 
     layer.zoomToShowLayer(marker, () => {
-      if (window.matchMedia("(min-width: 661px)").matches) {
+      if (window.matchMedia("(min-width: 1021px)").matches) {
         marker.openPopup();
       } else {
         marker.closePopup();
       }
       map.panTo(marker.getLatLng(), { animate: true, duration: 0.35 });
     });
-  }, [selectedId]);
+  }, [selectedId, listings]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -284,9 +302,9 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
 
   const mapModeText = tilesEnabled
     ? tileFailed
-      ? "Online tiles unavailable · local line fallback visible"
-      : "Online street map · local fallback hidden"
-    : "Local line fallback · no external map request";
+      ? "在线地图加载失败 · 已显示简化地图"
+      : "在线街道地图"
+    : "简化地图 · 不联网";
 
   return (
     <div className={`leafletShell ${tilesEnabled ? "tilesEnabled" : "localMap"} ${tileFailed ? "tileFailed" : ""}`}>
@@ -302,7 +320,7 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
         © OpenStreetMap contributors
       </a>
       <button className="tileToggle" type="button" onClick={() => setTilesEnabled((value) => !value)}>
-        {tilesEnabled ? "切换本地兜底" : "加载在线真实地图"}
+        {tilesEnabled ? "切到简化地图" : "回到街道地图"}
       </button>
     </div>
   );
