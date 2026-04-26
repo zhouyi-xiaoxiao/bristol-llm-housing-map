@@ -290,6 +290,40 @@ footer {
   align-items: start;
 }
 
+.schoolNotice {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.36fr) minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin: -6px 0 20px;
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid rgba(23, 20, 17, 0.16);
+  background: rgba(255, 253, 248, 0.56);
+  padding: 14px 16px;
+}
+
+.schoolNotice strong {
+  font-family: var(--display);
+  font-size: clamp(1.25rem, 1.8vw, 1.75rem);
+  font-weight: 500;
+  line-height: 1.02;
+}
+
+.schoolNotice span {
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+
+.schoolNotice a {
+  border: 1px solid var(--ink);
+  padding: 9px 11px;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .mapArea {
   min-width: 0;
 }
@@ -400,6 +434,14 @@ footer {
   font-family: var(--sans);
 }
 
+.leaflet-marker-pane {
+  z-index: 610;
+}
+
+.leaflet-popup-pane {
+  z-index: 720;
+}
+
 .leaflet-control-zoom a {
   color: var(--ink);
   font-family: var(--mono);
@@ -416,15 +458,15 @@ footer {
 .numberMarker,
 .schoolLeafletMarker {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 24px;
+  height: 24px;
   place-items: center;
   border: 2px solid white;
   border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(23, 20, 17, 0.28);
+  box-shadow: 0 6px 16px rgba(23, 20, 17, 0.28);
   color: white;
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: 0.58rem;
   font-weight: 800;
 }
 
@@ -437,22 +479,71 @@ footer {
 }
 
 .numberMarkerSelected {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
+  border-width: 3px;
   border-color: var(--ink);
   background: var(--red-2);
   color: white;
-  transform: translate(-3px, -3px);
+  font-size: 0.7rem;
 }
 
 .schoolLeafletMarker {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
+  border-width: 3px;
   background: var(--ink);
   color: var(--paper-2);
   font-family: var(--display);
-  font-size: 1.2rem;
+  font-size: 1.45rem;
   font-weight: 600;
+}
+
+.schoolTooltip {
+  border: 1px solid var(--ink);
+  background: rgba(255, 253, 248, 0.96);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 24px rgba(23, 20, 17, 0.14);
+}
+
+.schoolTooltip::before {
+  display: none;
+}
+
+.clusterMarker {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--ink);
+  box-shadow: 0 8px 22px rgba(23, 20, 17, 0.24);
+  color: var(--paper-2);
+  font-family: var(--mono);
+  line-height: 1;
+}
+
+.clusterMarker span {
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.clusterMarker em {
+  margin-top: -8px;
+  font-size: 0.42rem;
+  font-style: normal;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.marker-cluster-spider-leg {
+  stroke: var(--ink);
+  stroke-width: 1.2;
 }
 
 .leafletPopup {
@@ -947,6 +1038,7 @@ footer p {
   .heroGrid,
   .filterBand,
   .mapShell,
+  .schoolNotice,
   .applicationGrid,
   .sectionLead,
   .adviceBand,
@@ -1053,20 +1145,35 @@ footer p {
   }
 
   .numberMarker {
-    width: 30px;
-    height: 30px;
-    font-size: 0.62rem;
+    width: 22px;
+    height: 22px;
+    font-size: 0.54rem;
   }
 
   .numberMarkerSelected {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
   }
 
   .schoolLeafletMarker {
-    width: 34px;
-    height: 34px;
-    font-size: 1rem;
+    width: 38px;
+    height: 38px;
+    font-size: 1.18rem;
+  }
+
+  .schoolTooltip {
+    max-width: 148px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .schoolNotice {
+    gap: 10px;
+  }
+
+  .schoolNotice a {
+    width: fit-content;
+    white-space: normal;
   }
 
   .auditGrid {

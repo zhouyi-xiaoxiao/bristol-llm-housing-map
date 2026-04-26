@@ -3,6 +3,7 @@ import {
   applicationLinks,
   appleMapsUrl,
   categories,
+  destination,
   googleMapsUrl,
   listings,
   sourceAudit,
@@ -442,9 +443,19 @@ export default function App() {
           <p className="kicker">Interactive map · {visibleListings.length} visible</p>
           <h2>现在是能用的地图</h2>
           <p>
-            地图支持拖拽、缩放、点击编号 marker。默认使用本地简化底图，不依赖 Google、OSM 或任何 API key；需要街道细节时再手动加载
-            OpenStreetMap 增强层。
+            地图支持拖拽、滚轮/按钮缩放、点击编号 marker。默认加载真实街道底图；如果国内网络无法取到瓦片，本地兜底底图和全部点位仍然显示。
           </p>
+        </div>
+        <div className="schoolNotice">
+          <strong>黑色 W = Wills Memorial Building / Law School，上课中心点</strong>
+          <span>
+            这个范围是你大概率上课和日常去学校的区域：Queens Road 的 Wills Memorial Building
+            是法学院和很多教学活动的锚点，周边 Clifton Triangle、Park Street、College Green、City Centre
+            是步行找房最该看的圈。
+          </span>
+          <a href={destination.sourceUrl} target="_blank" rel="noreferrer">
+            University official address
+          </a>
         </div>
         <div className="mapShell">
           <div className="mapArea">

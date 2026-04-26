@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
 
 import { appleMapsUrl, categories, destination, googleMapsUrl, type Listing } from "./data";
 
@@ -23,31 +25,16 @@ function escapeHtml(value: string) {
   });
 }
 
-function stableOffset(id: string) {
-  let hash = 0;
-  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) % 9973;
-  const angle = (hash % 360) * (Math.PI / 180);
-  const radius = 0.00018 + (hash % 7) * 0.000045;
-  return {
-    lat: Math.sin(angle) * radius,
-    lng: Math.cos(angle) * radius,
-  };
-}
-
-function displayPoint(listing: Listing): L.LatLngExpression {
-  const offset = stableOffset(listing.id);
-  return [listing.lat + offset.lat, listing.lng + offset.lng];
-}
-
 function markerIcon(index: number, listing: Listing, selected: boolean) {
+  const size = selected ? 30 : 24;
   return L.divIcon({
     className: "",
     html: `<div class="numberMarker ${selected ? "numberMarkerSelected" : ""} ${
       listing.borderline ? "numberMarkerBorderline" : ""
     }"><span>${index + 1}</span></div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -16],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -14],
   });
 }
 
@@ -55,9 +42,20 @@ function schoolIcon() {
   return L.divIcon({
     className: "",
     html: `<div class="schoolLeafletMarker"><span>W</span></div>`,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -18],
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22],
+  });
+}
+
+function clusterIcon(cluster: L.MarkerCluster) {
+  const count = cluster.getChildCount();
+  const size = count >= 20 ? 42 : count >= 10 ? 38 : 34;
+  return L.divIcon({
+    className: "",
+    html: `<div class="clusterMarker"><span>${count}</span><em>listings</em></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -79,13 +77,13 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
-  const markerLayerRef = useRef<L.LayerGroup | null>(null);
+  const markerLayerRef = useRef<L.MarkerClusterGroup | null>(null);
   const markerRefs = useRef<Record<string, L.Marker>>({});
-  const [tilesEnabled, setTilesEnabled] = useState(false);
+  const [tilesEnabled, setTilesEnabled] = useState(true);
   const [tileFailed, setTileFailed] = useState(false);
 
   const bounds = useMemo(() => {
-    const points = listings.map((listing) => displayPoint(listing));
+    const points = listings.map((listing) => [listing.lat, listing.lng] as L.LatLngTuple);
     return L.latLngBounds([[destination.lat, destination.lng], ...points]);
   }, [listings]);
 
@@ -97,17 +95,46 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
       zoom: 14,
       minZoom: 12,
       maxZoom: 18,
-      scrollWheelZoom: false,
+      scrollWheelZoom: true,
       zoomControl: true,
+      preferCanvas: true,
     });
 
-    L.marker([destination.lat, destination.lng], { icon: schoolIcon(), zIndexOffset: 2000 })
+    map.createPane("schoolPane");
+    const schoolPane = map.getPane("schoolPane");
+    if (schoolPane) schoolPane.style.zIndex = "670";
+
+    L.marker([destination.lat, destination.lng], { icon: schoolIcon(), pane: "schoolPane", zIndexOffset: 2000 })
       .bindPopup(
-        `<div class="leafletPopup"><p class="popupKicker">Destination</p><strong>${destination.name}</strong><p>${destination.address}</p></div>`,
+        `<div class="leafletPopup"><p class="popupKicker">Primary class anchor</p><strong>Wills / Law School 上课点</strong><p>${destination.address}</p><div class="popupLinks"><a href="${destination.sourceUrl}" target="_blank" rel="noreferrer">Official address</a></div></div>`,
       )
+      .bindTooltip("Wills / Law School 上课点", {
+        className: "schoolTooltip",
+        direction: "top",
+        offset: [0, -22],
+        permanent: true,
+      })
       .addTo(map);
 
-    const layer = L.layerGroup().addTo(map);
+    const layer = L.markerClusterGroup({
+      chunkedLoading: true,
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 18,
+      maxClusterRadius: (zoom) => {
+        if (zoom >= 17) return 18;
+        if (zoom >= 15) return 28;
+        return 44;
+      },
+      iconCreateFunction: clusterIcon,
+      spiderLegPolylineOptions: {
+        color: "#171411",
+        weight: 1.2,
+        opacity: 0.72,
+      },
+    }).addTo(map);
+
     mapRef.current = map;
     markerLayerRef.current = layer;
     window.setTimeout(() => map.invalidateSize({ pan: false }), 120);
@@ -135,11 +162,12 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
 
     if (tileLayerRef.current) return;
 
-    const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    const tileLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri, OpenStreetMap contributors",
       maxZoom: 19,
     })
       .on("tileerror", () => setTileFailed(true))
+      .on("tileload", () => setTileFailed(false))
       .addTo(map);
 
     tileLayerRef.current = tileLayer;
@@ -169,7 +197,7 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
 
     listings.forEach((listing, index) => {
       const selected = listing.id === selectedId;
-      const marker = L.marker(displayPoint(listing), {
+      const marker = L.marker([listing.lat, listing.lng], {
         icon: markerIcon(index, listing, selected),
         keyboard: true,
         title: listing.name,
@@ -178,7 +206,7 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
         .bindPopup(popupHtml(listing), { closeButton: true, maxWidth: 260 })
         .on("click", () => onSelect(listing.id, { scroll: false }));
 
-      marker.addTo(layer);
+      layer.addLayer(marker);
       markerRefs.current[listing.id] = marker;
     });
 
@@ -193,11 +221,14 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
 
   useEffect(() => {
     const map = mapRef.current;
+    const layer = markerLayerRef.current;
     const marker = markerRefs.current[selectedId];
-    if (!map || !marker) return;
+    if (!map || !layer || !marker) return;
 
-    marker.openPopup();
-    map.panTo(marker.getLatLng(), { animate: true, duration: 0.35 });
+    layer.zoomToShowLayer(marker, () => {
+      marker.openPopup();
+      map.panTo(marker.getLatLng(), { animate: true, duration: 0.35 });
+    });
   }, [selectedId]);
 
   useEffect(() => {
@@ -213,11 +244,11 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
         <span>City Centre</span>
         <span>Harbourside</span>
         <span>Temple / Redcliffe</span>
-        <em>{tilesEnabled && tileFailed ? "Map tiles unavailable · markers still work" : "Local map default · China-friendly"}</em>
+        <em>{tilesEnabled && tileFailed ? "Street tiles unavailable · local fallback still works" : "Real street map · local fallback underneath"}</em>
       </div>
       <div ref={containerRef} className="leafletMap" aria-label="Interactive Bristol housing map" />
       <button className="tileToggle" type="button" onClick={() => setTilesEnabled((value) => !value)}>
-        {tilesEnabled ? "关闭街道瓦片" : "加载 OSM 街道层"}
+        {tilesEnabled ? "切换本地兜底" : "加载真实街道图"}
       </button>
     </div>
   );
