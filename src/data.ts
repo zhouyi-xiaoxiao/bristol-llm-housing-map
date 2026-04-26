@@ -83,6 +83,10 @@ export const verificationLinks = [
     label: "Bristol SU Lettings",
     url: "https://www.bristolsulettings.co.uk/",
   },
+  {
+    label: "OpenStreetMap data attribution",
+    url: "https://www.openstreetmap.org/copyright",
+  },
 ];
 
 export function appleMapsUrl(origin: string) {

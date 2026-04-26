@@ -455,6 +455,87 @@ footer {
   font-size: 0.58rem;
 }
 
+.localPolygon {
+  stroke-opacity: 0.46;
+  fill-opacity: 0.42;
+}
+
+.localGreen {
+  stroke: rgba(119, 131, 109, 0.74);
+  fill: rgba(119, 131, 109, 0.32);
+}
+
+.localWater {
+  stroke: rgba(92, 142, 164, 0.78);
+  fill: rgba(127, 163, 190, 0.46);
+}
+
+.localCampus {
+  stroke: rgba(163, 52, 38, 0.52);
+  fill: rgba(163, 52, 38, 0.08);
+}
+
+.localLine {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.localRoadMajor {
+  stroke: rgba(163, 52, 38, 0.78);
+}
+
+.localRoadMid {
+  stroke: rgba(23, 20, 17, 0.48);
+}
+
+.localRoadMinor {
+  stroke: rgba(86, 104, 120, 0.42);
+}
+
+.localRailway {
+  stroke: rgba(23, 20, 17, 0.48);
+}
+
+.localWaterway {
+  stroke: rgba(92, 142, 164, 0.78);
+}
+
+.tilesEnabled .localPolygon,
+.tilesEnabled .localLine,
+.tilesEnabled .localMapLabel {
+  opacity: 0.28;
+}
+
+.localMapLabel {
+  display: inline-block;
+  min-width: 84px;
+  color: rgba(23, 20, 17, 0.54);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.07em;
+  text-align: center;
+  text-shadow:
+    0 1px 0 rgba(255, 253, 248, 0.92),
+    0 -1px 0 rgba(255, 253, 248, 0.92),
+    1px 0 0 rgba(255, 253, 248, 0.92),
+    -1px 0 0 rgba(255, 253, 248, 0.92);
+  text-transform: uppercase;
+}
+
+.localMapAttribution {
+  position: absolute;
+  right: 10px;
+  bottom: 2px;
+  z-index: 500;
+  border: 0;
+  background: rgba(255, 253, 248, 0.78);
+  padding: 3px 5px;
+  color: var(--bluegrey);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+}
+
 .numberMarker,
 .schoolLeafletMarker {
   display: grid;
@@ -1136,8 +1217,8 @@ footer p {
   }
 
   .leafletShell {
-    height: 390px;
-    min-height: 390px;
+    height: clamp(430px, 54vh, 480px);
+    min-height: 430px;
   }
 
   .leaflet-control-attribution {

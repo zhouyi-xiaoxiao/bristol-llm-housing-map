@@ -5,6 +5,7 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 
 import { appleMapsUrl, categories, destination, googleMapsUrl, type Listing } from "./data";
+import { localBasemap } from "./localBasemap";
 
 type MapViewProps = {
   listings: Listing[];
@@ -48,6 +49,15 @@ function schoolIcon() {
   });
 }
 
+function labelIcon(text: string) {
+  return L.divIcon({
+    className: "",
+    html: `<span class="localMapLabel">${escapeHtml(text)}</span>`,
+    iconSize: [120, 20],
+    iconAnchor: [60, 10],
+  });
+}
+
 function clusterIcon(cluster: L.MarkerCluster) {
   const count = cluster.getChildCount();
   const size = count >= 20 ? 42 : count >= 10 ? 38 : 34;
@@ -57,6 +67,20 @@ function clusterIcon(cluster: L.MarkerCluster) {
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
+}
+
+function lineStyle(kind: string): L.PolylineOptions {
+  if (kind === "road-major") return { className: "localLine localRoadMajor", weight: 3.6 };
+  if (kind === "road-mid") return { className: "localLine localRoadMid", weight: 2.2 };
+  if (kind === "road-minor") return { className: "localLine localRoadMinor", weight: 1.4 };
+  if (kind === "railway") return { className: "localLine localRailway", weight: 1.5, dashArray: "4 4" };
+  return { className: "localLine localWaterway", weight: 2.2 };
+}
+
+function polygonStyle(kind: string): L.PathOptions {
+  if (kind === "water") return { className: "localPolygon localWater", weight: 0.6 };
+  if (kind === "campus") return { className: "localPolygon localCampus", weight: 0.8 };
+  return { className: "localPolygon localGreen", weight: 0.6 };
 }
 
 function popupHtml(listing: Listing) {
@@ -77,9 +101,10 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const localLayerRef = useRef<L.LayerGroup | null>(null);
   const markerLayerRef = useRef<L.MarkerClusterGroup | null>(null);
   const markerRefs = useRef<Record<string, L.Marker>>({});
-  const [tilesEnabled, setTilesEnabled] = useState(true);
+  const [tilesEnabled, setTilesEnabled] = useState(false);
   const [tileFailed, setTileFailed] = useState(false);
 
   const bounds = useMemo(() => {
@@ -97,12 +122,41 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
       maxZoom: 18,
       scrollWheelZoom: true,
       zoomControl: true,
-      preferCanvas: true,
     });
 
+    map.createPane("localPolygonPane");
+    map.createPane("localLinePane");
+    map.createPane("localLabelPane");
     map.createPane("schoolPane");
+    const polygonPane = map.getPane("localPolygonPane");
+    const linePane = map.getPane("localLinePane");
+    const labelPane = map.getPane("localLabelPane");
     const schoolPane = map.getPane("schoolPane");
+    if (polygonPane) polygonPane.style.zIndex = "250";
+    if (linePane) linePane.style.zIndex = "260";
+    if (labelPane) labelPane.style.zIndex = "265";
     if (schoolPane) schoolPane.style.zIndex = "670";
+
+    const localLayer = L.layerGroup().addTo(map);
+    localBasemap.polygons.forEach((polygon) => {
+      L.polygon(
+        polygon.p.map(([lat, lng]) => [lat, lng] as L.LatLngTuple),
+        { ...polygonStyle(polygon.k), pane: "localPolygonPane", interactive: false },
+      ).addTo(localLayer);
+    });
+    localBasemap.lines.forEach((line) => {
+      L.polyline(
+        line.p.map(([lat, lng]) => [lat, lng] as L.LatLngTuple),
+        { ...lineStyle(line.k), pane: "localLinePane", interactive: false },
+      ).addTo(localLayer);
+    });
+    localBasemap.labels.forEach((label) => {
+      L.marker(label.p as L.LatLngTuple, {
+        icon: labelIcon(label.t),
+        pane: "localLabelPane",
+        interactive: false,
+      }).addTo(localLayer);
+    });
 
     L.marker([destination.lat, destination.lng], { icon: schoolIcon(), pane: "schoolPane", zIndexOffset: 2000 })
       .bindPopup(
@@ -136,6 +190,7 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
     }).addTo(map);
 
     mapRef.current = map;
+    localLayerRef.current = localLayer;
     markerLayerRef.current = layer;
     window.setTimeout(() => map.invalidateSize({ pan: false }), 120);
     window.setTimeout(() => map.invalidateSize({ pan: false }), 700);
@@ -144,6 +199,7 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
       map.remove();
       mapRef.current = null;
       tileLayerRef.current = null;
+      localLayerRef.current = null;
       markerLayerRef.current = null;
       markerRefs.current = {};
     };
@@ -226,7 +282,11 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
     if (!map || !layer || !marker) return;
 
     layer.zoomToShowLayer(marker, () => {
-      marker.openPopup();
+      if (window.matchMedia("(min-width: 661px)").matches) {
+        marker.openPopup();
+      } else {
+        marker.closePopup();
+      }
       map.panTo(marker.getLatLng(), { animate: true, duration: 0.35 });
     });
   }, [selectedId]);
@@ -244,11 +304,14 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
         <span>City Centre</span>
         <span>Harbourside</span>
         <span>Temple / Redcliffe</span>
-        <em>{tilesEnabled && tileFailed ? "Street tiles unavailable · local fallback still works" : "Real street map · local fallback underneath"}</em>
+        <em>{tilesEnabled && tileFailed ? "Online tiles unavailable · local OSM vector map still works" : "Local OSM vector map · no external map request"}</em>
       </div>
       <div ref={containerRef} className="leafletMap" aria-label="Interactive Bristol housing map" />
+      <a className="localMapAttribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+        © OpenStreetMap contributors
+      </a>
       <button className="tileToggle" type="button" onClick={() => setTilesEnabled((value) => !value)}>
-        {tilesEnabled ? "切换本地兜底" : "加载真实街道图"}
+        {tilesEnabled ? "回到本地地图" : "加载在线街道图"}
       </button>
     </div>
   );

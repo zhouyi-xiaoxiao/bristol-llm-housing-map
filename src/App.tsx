@@ -442,7 +442,8 @@ export default function App() {
           <p className="kicker">Interactive map · {visibleListings.length} visible</p>
           <h2>现在是能用的地图</h2>
           <p>
-            地图支持拖拽、滚轮/按钮缩放、点击编号 marker。默认加载真实街道底图；如果国内网络无法取到瓦片，本地兜底底图和全部点位仍然显示。
+            地图支持拖拽、滚轮/按钮缩放、点击编号 marker。默认使用本地打包的 OpenStreetMap 矢量道路/水系/绿地数据，不访问任何外部地图服务；
+            需要更多街道视觉细节时，可手动加载在线街道图。
           </p>
         </div>
         <div className="schoolNotice">
