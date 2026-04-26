@@ -231,9 +231,24 @@ footer {
 
 .filterBand {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.7fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.7fr);
+  gap: 24px;
   padding: 20px 0 34px;
+}
+
+.filterColumn {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.filterLabel {
+  margin: 0;
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .filterScroller {
@@ -245,7 +260,17 @@ footer {
 }
 
 .filterGroup.compact button {
+  min-height: 32px;
+  padding: 6px 11px;
+  border-color: rgba(163, 52, 38, 0.55);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+}
+
+.filterGroup.compact button.active {
+  background: var(--red);
   border-color: var(--red);
+  color: var(--paper-2);
 }
 
 .mapBand,
@@ -704,53 +729,36 @@ footer {
   display: grid;
 }
 
-.mobileSummaryStrip {
+/* Mobile detail panel — shown ≤1020px in place of the desktop .mapAside.
+   Mirrors SelectedSummary's information layers (kicker, name, note,
+   miniFacts with sourceStatusLabel, three stacked links incl. official source). */
+.mobileDetailPanel {
   display: none;
-}
-
-.mobileSummaryCard {
-  flex: 0 0 min(82vw, 330px);
+  margin-top: 12px;
   border: 1px solid rgba(23, 20, 17, 0.16);
-  border-top: 4px solid var(--ink);
-  background: rgba(255, 253, 248, 0.78);
-  padding: 14px;
-  text-align: left;
+  border-left: 4px solid var(--red);
+  background: rgba(255, 253, 248, 0.82);
+  padding: 18px;
 }
 
-.mobileSummaryCard h3 {
-  margin: 5px 0 0;
+.mobileDetailPanel h3 {
+  margin: 4px 0 0;
   font-family: var(--display);
-  font-size: 1.65rem;
+  font-size: clamp(1.7rem, 5vw, 2.2rem);
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.02;
 }
 
-.mobileSummaryCard p:not(.kicker) {
+.mobileDetailPanel .mobileNote {
   margin: 10px 0 0;
   color: var(--ink-2);
-  line-height: 1.45;
+  line-height: 1.6;
 }
 
-.activeMobileSummary {
-  border-color: var(--red);
-  border-top-color: var(--red);
-  box-shadow: 0 18px 46px rgba(163, 52, 38, 0.12);
-}
-
-.summaryLinks {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.summaryLinks a {
-  border: 1px solid rgba(23, 20, 17, 0.18);
-  padding: 6px 8px;
-  color: var(--red);
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.mobileDetailPanel .emptyHint {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  line-height: 1.6;
 }
 
 .listingGrid {
@@ -1141,18 +1149,8 @@ footer p {
     min-height: 520px;
   }
 
-  .mobileSummaryStrip {
-    display: flex;
-    gap: 12px;
-    margin-top: 12px;
-    overflow-x: auto;
-    padding: 2px 0 12px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .mobileSummaryCard {
-    scroll-snap-align: start;
+  .mobileDetailPanel {
+    display: block;
   }
 
   .sourceLinks {
