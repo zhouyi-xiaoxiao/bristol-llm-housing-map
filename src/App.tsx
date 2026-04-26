@@ -1,17 +1,18 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   appleMapsUrl,
   categories,
-  destination,
   googleMapsUrl,
   listings,
+  sourceAudit,
   type CategoryId,
   type Listing,
   verificationLinks,
 } from "./data";
+import { MapView } from "./MapView";
 
 type Filter = CategoryId | "all";
-type QuickFilter = "all" | "top" | "budget" | "oneBed" | "bills";
+type QuickFilter = "all" | "top" | "budget" | "oneBed" | "bills" | "borderline";
 
 const quickFilters: { id: QuickFilter; label: string }[] = [
   { id: "all", label: "全部" },
@@ -19,6 +20,7 @@ const quickFilters: { id: QuickFilter; label: string }[] = [
   { id: "budget", label: "预算友好" },
   { id: "oneBed", label: "1B1B" },
   { id: "bills", label: "全包" },
+  { id: "borderline", label: "边界备选" },
 ];
 
 function stars(priority: Listing["priority"]) {
@@ -30,11 +32,14 @@ function stars(priority: Listing["priority"]) {
 function matchesQuickFilter(listing: Listing, filter: QuickFilter) {
   if (filter === "all") return true;
   if (filter === "top") return Boolean(listing.topPick);
+  if (filter === "borderline") return Boolean(listing.borderline);
   if (filter === "budget") {
-    return listing.tags.some((tag) => tag.includes("预算") || tag.includes("低价"));
+    return listing.tags.some((tag) => tag.includes("预算") || tag.includes("低价") || tag.includes("便宜"));
   }
   if (filter === "oneBed") {
-    return /1-bed|1B1B|1-bed flat/i.test(`${listing.name} ${listing.type} ${listing.tags.join(" ")}`);
+    return /1-bed|1B1B|1-bed flat|one-bedroom/i.test(
+      `${listing.name} ${listing.type} ${listing.tags.join(" ")}`,
+    );
   }
   if (filter === "bills") {
     return /全包|all bills|bills|included/i.test(
@@ -44,27 +49,38 @@ function matchesQuickFilter(listing: Listing, filter: QuickFilter) {
   return true;
 }
 
+function sourceStatusLabel(listing: Listing) {
+  if (listing.sourceStatus === "verified") return "官方确认";
+  if (listing.sourceStatus === "provider") return "Provider";
+  if (listing.sourceStatus === "search") return "搜索页";
+  return "实时波动";
+}
+
 function ListingCard({
   listing,
   active,
+  number,
   onSelect,
   cardRef,
 }: {
   listing: Listing;
   active: boolean;
-  onSelect: (id: string) => void;
+  number: number;
+  onSelect: (id: string, options?: { scroll?: boolean }) => void;
   cardRef?: (node: HTMLElement | null) => void;
 }) {
   return (
     <article
       ref={cardRef}
       id={`listing-${listing.id}`}
-      className={`listingCard ${active ? "activeCard" : ""}`}
-      onMouseEnter={() => onSelect(listing.id)}
+      className={`listingCard ${active ? "activeCard" : ""} ${listing.borderline ? "borderlineCard" : ""}`}
+      onMouseEnter={() => onSelect(listing.id, { scroll: false })}
     >
       <div className="cardHeader">
         <div>
-          <p className="kicker">{categories[listing.category].short}</p>
+          <p className="kicker">
+            {number.toString().padStart(2, "0")} · {categories[listing.category].short}
+          </p>
           <h3>{listing.name}</h3>
         </div>
         <div className="rating" aria-label={`${listing.priority} out of 5 priority`}>
@@ -91,12 +107,17 @@ function ListingCard({
       </dl>
       <p className="judgment">{listing.note}</p>
       <div className="tagRow">
+        <span>{sourceStatusLabel(listing)}</span>
         {listing.tags.map((tag) => (
           <span key={tag}>{tag}</span>
         ))}
         {listing.verifyLive && <span className="warnTag">签约前实时确认</span>}
+        {listing.borderline && <span className="warnTag">超过/接近 20 分钟</span>}
       </div>
       <div className="linkRow">
+        <button type="button" onClick={() => onSelect(listing.id, { scroll: false })}>
+          定位地图
+        </button>
         <a href={appleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
           Apple Maps
         </a>
@@ -111,110 +132,125 @@ function ListingCard({
   );
 }
 
-function MapPanel({
-  visibleListings,
+function SelectedSummary({
+  selected,
+  selectedNumber,
+}: {
+  selected?: Listing;
+  selectedNumber: number;
+}) {
+  if (!selected) {
+    return (
+      <aside className="mapAside">
+        <p className="kicker">Selected</p>
+        <h3>选择一个地图点</h3>
+        <p>点击地图上的编号 marker，右侧会显示路线、价格、来源和判断。</p>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="mapAside">
+      <p className="kicker">
+        Selected · {selectedNumber.toString().padStart(2, "0")} · {categories[selected.category].short}
+      </p>
+      <h3>{selected.name}</h3>
+      <p>{selected.note}</p>
+      <div className="miniFacts">
+        <span>{selected.walk}</span>
+        <span>{selected.price}</span>
+        <span>{sourceStatusLabel(selected)}</span>
+      </div>
+      <div className="linkRow stackedLinks">
+        <a href={appleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
+          Apple Maps 步行路线
+        </a>
+        <a href={googleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
+          Google Maps 备用
+        </a>
+        <a href={selected.sourceUrl} target="_blank" rel="noreferrer">
+          来源页面
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function MobileSummaryStrip({
+  listings,
   selectedId,
   onSelect,
 }: {
-  visibleListings: Listing[];
+  listings: Listing[];
   selectedId: string;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, options?: { scroll?: boolean }) => void;
 }) {
-  const selected = listings.find((item) => item.id === selectedId);
+  const ordered = useMemo(() => {
+    const selected = listings.find((listing) => listing.id === selectedId);
+    const rest = listings.filter((listing) => listing.id !== selectedId);
+    return selected ? [selected, ...rest] : rest;
+  }, [listings, selectedId]);
 
   return (
-    <section className="mapBand" id="map">
+    <div className="mobileSummaryStrip" aria-label="Visible map listings">
+      {ordered.map((listing) => {
+        const index = listings.findIndex((item) => item.id === listing.id) + 1;
+        return (
+          <article
+            className={`mobileSummaryCard ${listing.id === selectedId ? "activeMobileSummary" : ""}`}
+            key={listing.id}
+            onClick={() => onSelect(listing.id, { scroll: false })}
+          >
+            <p className="kicker">
+              {index.toString().padStart(2, "0")} · {categories[listing.category].short}
+            </p>
+            <h3>{listing.name}</h3>
+            <p>{listing.walk} · {listing.price}</p>
+            <div className="summaryLinks">
+              <a href={appleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
+                Apple
+              </a>
+              <a href={googleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
+                Google
+              </a>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function SourceAudit() {
+  return (
+    <section className="auditBand" id="source-audit">
       <div className="sectionLead">
-        <p className="kicker">China-friendly map layer</p>
-        <h2>地图先能看，再跳转导航</h2>
+        <p className="kicker">Source audit</p>
+        <h2>已遍历来源</h2>
         <p>
-          红点是公寓，黑色方标是 Wills / Law School。内嵌地图完全本地绘制，不加载 Google
-          地图；路线默认打开 Apple Maps，Google Maps 作为备用链接。
+          这里记录纳入、边界保留和排除原因。大学官方和 PBSA provider 信息相对稳定；普通社会房源只作为实时搜索线索。
         </p>
       </div>
-
-      <div className="mapShell">
-        <div className="mapCanvas" aria-label="Stylized Bristol accommodation map">
-          <svg viewBox="0 0 100 100" role="img" aria-labelledby="mapTitle mapDesc">
-            <title id="mapTitle">Bristol housing map around Wills Memorial Building</title>
-            <desc id="mapDesc">
-              A stylized map showing Bristol city centre, Clifton, the harbour and accommodation pins.
-            </desc>
-            <rect width="100" height="100" rx="0" className="mapBg" />
-            <path
-              className="river"
-              d="M0 72 C16 64 27 76 41 70 C54 64 60 75 74 70 C87 66 93 58 100 61 L100 100 L0 100 Z"
-            />
-            <path className="park" d="M7 13 L27 6 L37 18 L25 31 L9 28 Z" />
-            <path className="park second" d="M73 9 L94 15 L90 31 L70 28 Z" />
-            <path className="road major" d="M15 88 C29 72 34 57 41 41 C49 24 62 16 83 8" />
-            <path className="road" d="M7 48 C25 44 41 41 60 39 C75 38 86 35 96 30" />
-            <path className="road" d="M18 22 C31 34 47 48 67 63 C78 72 90 78 98 82" />
-            <path className="road" d="M26 68 C36 55 49 50 63 50 C78 50 88 44 96 38" />
-            <text x="12" y="11" className="mapLabel">
-              Whiteladies / Clifton
-            </text>
-            <text x="57" y="32" className="mapLabel">
-              City Centre
-            </text>
-            <text x="53" y="85" className="mapLabel">
-              Harbourside
-            </text>
-
-            <g className="schoolMarker" transform={`translate(${destination.map.x} ${destination.map.y})`}>
-              <rect x="-3.6" y="-3.6" width="7.2" height="7.2" rx="1" />
-              <path d="M-6 0 L6 0 M0 -6 L0 6" />
-            </g>
-            <text x={destination.map.x + 4.5} y={destination.map.y - 5} className="schoolLabel">
-              Wills / Law
-            </text>
-
-            {visibleListings.map((listing) => (
-              <g
-                key={listing.id}
-                className={`pinButton ${selectedId === listing.id ? "selectedPin" : ""}`}
-                transform={`translate(${listing.map.x} ${listing.map.y})`}
-                onClick={() => onSelect(listing.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(listing.id);
-                  }
-                }}
-                tabIndex={0}
-                role="button"
-                aria-label={`Select ${listing.name}`}
-              >
-                <path d="M0 -5.4 C3.2 -5.4 5.4 -3.2 5.4 0 C5.4 4 0 8.8 0 8.8 C0 8.8 -5.4 4 -5.4 0 C-5.4 -3.2 -3.2 -5.4 0 -5.4Z" />
-                <circle r="1.8" />
-              </g>
-            ))}
-          </svg>
-        </div>
-
-        <aside className="mapAside">
-          <p className="kicker">Selected</p>
-          <h3>{selected?.name ?? "选择一个红点"}</h3>
-          {selected ? (
-            <>
-              <p>{selected.note}</p>
-              <div className="miniFacts">
-                <span>{selected.walk}</span>
-                <span>{selected.price}</span>
-              </div>
-              <div className="linkRow stackedLinks">
-                <a href={appleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
-                  Apple Maps 步行路线
-                </a>
-                <a href={googleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
-                  Google Maps 备用
-                </a>
-              </div>
-            </>
-          ) : (
-            <p>点击地图上的红点，右侧会显示路线和判断。</p>
-          )}
-        </aside>
+      <div className="auditGrid">
+        {sourceAudit.map((audit) => (
+          <article className="auditCard" key={audit.group}>
+            <h3>{audit.group}</h3>
+            <p className="auditLabel">Included</p>
+            <p>{audit.included.join(" · ")}</p>
+            {audit.borderline.length > 0 && (
+              <>
+                <p className="auditLabel">Borderline</p>
+                <p>{audit.borderline.join(" · ")}</p>
+              </>
+            )}
+            <p className="auditLabel">Excluded</p>
+            <ul>
+              {audit.excluded.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -234,13 +270,31 @@ export default function App() {
   }, [category, quickFilter]);
 
   const topPicks = listings.filter((listing) => listing.topPick);
+  const mainListings = visibleListings.filter((listing) => !listing.borderline);
+  const borderlineListings = visibleListings.filter((listing) => listing.borderline);
+  const selected = listings.find((item) => item.id === selectedId);
+  const selectedNumber = Math.max(
+    1,
+    visibleListings.findIndex((listing) => listing.id === selectedId) + 1,
+  );
 
-  function selectAndScroll(id: string) {
-    setSelectedId(id);
-    window.setTimeout(() => {
-      cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 20);
-  }
+  const selectListing = useCallback(
+    (id: string, options?: { scroll?: boolean }) => {
+      setSelectedId(id);
+      if (options?.scroll) {
+        window.setTimeout(() => {
+          cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 20);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (visibleListings.length > 0 && !visibleListings.some((listing) => listing.id === selectedId)) {
+      setSelectedId(visibleListings[0].id);
+    }
+  }, [selectedId, visibleListings]);
 
   return (
     <main>
@@ -263,21 +317,22 @@ export default function App() {
             </h1>
             <p className="intro">
               面向中国 international LLM 的 Studio + 1B1B / one-bedroom flat 筛选。以上课点
-              University of Bristol Law School / Wills Memorial Building 为中心，只保留步行约 20
-              分钟以内、值得认真看的选项。
+              University of Bristol Law School / Wills Memorial Building 为中心，主列表保留步行约 20
+              分钟以内，略远但有参考价值的放入边界备选。
             </p>
             <div className="heroActions">
               <a href="#map">看地图</a>
               <a href="#listings">看全部房源</a>
+              <a href="#source-audit">看来源审计</a>
             </div>
           </div>
           <div className="heroPlate" aria-label="Quick recommendation">
-            <p className="plateNumber">05</p>
+            <p className="plateNumber">{topPicks.length.toString().padStart(2, "0")}</p>
             <p className="kicker">Most recommended</p>
             <ol>
               {topPicks.map((listing) => (
                 <li key={listing.id}>
-                  <button type="button" onClick={() => selectAndScroll(listing.id)}>
+                  <button type="button" onClick={() => selectListing(listing.id, { scroll: true })}>
                     {listing.name}
                   </button>
                 </li>
@@ -287,45 +342,61 @@ export default function App() {
         </section>
       </header>
 
-      <section className="filterBand">
-        <div className="filterGroup" aria-label="Category filters">
-          <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>
-            全部
-          </button>
-          {Object.entries(categories).map(([id, item]) => (
-            <button
-              key={id}
-              className={category === id ? "active" : ""}
-              onClick={() => setCategory(id as CategoryId)}
-            >
-              {item.label}
+      <section className="filterBand" aria-label="Listing filters">
+        <div className="filterScroller">
+          <div className="filterGroup" aria-label="Category filters">
+            <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>
+              全部
             </button>
-          ))}
+            {Object.entries(categories).map(([id, item]) => (
+              <button
+                key={id}
+                className={category === id ? "active" : ""}
+                onClick={() => setCategory(id as CategoryId)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="filterGroup compact" aria-label="Quick filters">
-          {quickFilters.map((item) => (
-            <button
-              key={item.id}
-              className={quickFilter === item.id ? "active" : ""}
-              onClick={() => setQuickFilter(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="filterScroller">
+          <div className="filterGroup compact" aria-label="Quick filters">
+            {quickFilters.map((item) => (
+              <button
+                key={item.id}
+                className={quickFilter === item.id ? "active" : ""}
+                onClick={() => setQuickFilter(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
-      <MapPanel
-        visibleListings={visibleListings}
-        selectedId={selectedId}
-        onSelect={(id) => {
-          selectAndScroll(id);
-        }}
-      />
+      <section className="mapBand" id="map">
+        <div className="sectionLead">
+          <p className="kicker">Interactive map · {visibleListings.length} visible</p>
+          <h2>现在是能用的地图</h2>
+          <p>
+            地图支持拖拽、缩放、点击编号 marker。默认加载 OpenStreetMap 瓦片；如果瓦片失败，底图会退回本地简化层，marker
+            仍然可点击，不会空白。
+          </p>
+        </div>
+        <div className="mapShell">
+          <div className="mapArea">
+            <MapView listings={visibleListings} selectedId={selectedId} onSelect={selectListing} />
+            <MobileSummaryStrip listings={visibleListings} selectedId={selectedId} onSelect={selectListing} />
+          </div>
+          <SelectedSummary selected={selected} selectedNumber={selectedNumber} />
+        </div>
+      </section>
 
       <section className="listingBand" id="listings">
         <div className="sectionLead">
-          <p className="kicker">{visibleListings.length} listings visible</p>
+          <p className="kicker">
+            {mainListings.length} main · {borderlineListings.length} borderline
+          </p>
           <h2>所有候选房源</h2>
           <p>
             私营学生公寓和社会房源价格、房态变化很快；页面用来做第一轮筛选，签约前以官网、邮件回复和合同为准。
@@ -333,18 +404,43 @@ export default function App() {
         </div>
 
         <div className="listingGrid">
-          {visibleListings.map((listing) => (
+          {mainListings.map((listing) => (
             <ListingCard
               key={listing.id}
+              number={visibleListings.findIndex((item) => item.id === listing.id) + 1}
               listing={listing}
               active={selectedId === listing.id}
-              onSelect={setSelectedId}
+              onSelect={selectListing}
               cardRef={(node) => {
                 cardRefs.current[listing.id] = node;
               }}
             />
           ))}
         </div>
+
+        {borderlineListings.length > 0 && (
+          <>
+            <div className="sectionLead borderlineLead">
+              <p className="kicker">Borderline / 可备选</p>
+              <h2>略远但值得知道</h2>
+              <p>这些项目通常超过或接近 20 分钟，保留是为了完整比较；如果每天去 Wills 上课，不建议作为第一选择。</p>
+            </div>
+            <div className="listingGrid">
+              {borderlineListings.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  number={visibleListings.findIndex((item) => item.id === listing.id) + 1}
+                  listing={listing}
+                  active={selectedId === listing.id}
+                  onSelect={selectListing}
+                  cardRef={(node) => {
+                    cardRefs.current[listing.id] = node;
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       <section className="tableBand">
@@ -356,20 +452,24 @@ export default function App() {
           <table>
             <thead>
               <tr>
+                <th>#</th>
                 <th>房源</th>
                 <th>类别</th>
                 <th>步行</th>
                 <th>价格</th>
+                <th>状态</th>
                 <th>路线</th>
               </tr>
             </thead>
             <tbody>
-              {visibleListings.map((listing) => (
+              {visibleListings.map((listing, index) => (
                 <tr key={listing.id}>
+                  <td>{index + 1}</td>
                   <td>{listing.name}</td>
                   <td>{categories[listing.category].label}</td>
                   <td>{listing.walk}</td>
                   <td>{listing.price}</td>
+                  <td>{listing.borderline ? "边界" : sourceStatusLabel(listing)}</td>
                   <td>
                     <a href={appleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
                       Apple
@@ -385,6 +485,8 @@ export default function App() {
           </table>
         </div>
       </section>
+
+      <SourceAudit />
 
       <section className="adviceBand">
         <div>

@@ -72,6 +72,7 @@ main {
 .mapBand,
 .listingBand,
 .tableBand,
+.auditBand,
 .adviceBand,
 footer {
   width: min(var(--container), calc(100vw - 2 * var(--edge)));
@@ -165,6 +166,7 @@ footer {
 
 .heroActions a,
 .linkRow a,
+.linkRow button,
 .filterGroup button {
   min-height: 38px;
   border: 1px solid currentColor;
@@ -189,6 +191,7 @@ footer {
 
 .heroActions a:hover,
 .linkRow a:hover,
+.linkRow button:hover,
 .filterGroup button:hover {
   transform: translateY(-1px);
   background: var(--red);
@@ -232,6 +235,10 @@ footer {
   padding: 20px 0 34px;
 }
 
+.filterScroller {
+  min-width: 0;
+}
+
 .filterGroup {
   align-content: start;
 }
@@ -243,6 +250,7 @@ footer {
 .mapBand,
 .listingBand,
 .tableBand,
+.auditBand,
 .adviceBand {
   padding-block: clamp(42px, 7vw, 84px);
   border-top: 1px solid rgba(23, 20, 17, 0.16);
@@ -275,12 +283,16 @@ footer {
 
 .mapShell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(270px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
   gap: 18px;
-  align-items: stretch;
+  align-items: start;
 }
 
-.mapCanvas,
+.mapArea {
+  min-width: 0;
+}
+
+.leafletShell,
 .mapAside,
 .listingCard,
 .tableWrap {
@@ -288,106 +300,196 @@ footer {
   box-shadow: 0 28px 80px rgba(23, 20, 17, 0.08);
 }
 
-.mapCanvas {
-  min-height: 520px;
+.leafletShell {
+  position: relative;
+  height: min(66vh, 650px);
+  min-height: 540px;
+  overflow: hidden;
   border: 1px solid rgba(23, 20, 17, 0.16);
 }
 
-.mapCanvas svg {
-  display: block;
+.leafletMap {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  min-height: 520px;
+  background: rgba(240, 234, 223, 0.2);
 }
 
-.mapBg {
-  fill: #f0eadf;
+.mapFallback {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  overflow: hidden;
+  background:
+    linear-gradient(155deg, transparent 0 44%, rgba(127, 163, 160, 0.42) 44.4% 51%, transparent 51.4%),
+    linear-gradient(35deg, transparent 0 52%, rgba(119, 131, 109, 0.2) 52.4% 57%, transparent 57.4%),
+    linear-gradient(90deg, rgba(23, 20, 17, 0.06) 1px, transparent 1px) 0 0 / 72px 72px,
+    linear-gradient(0deg, rgba(23, 20, 17, 0.05) 1px, transparent 1px) 0 0 / 72px 72px,
+    #f0eadf;
 }
 
-.river {
-  fill: rgba(127, 163, 160, 0.44);
-}
-
-.park {
-  fill: rgba(119, 131, 109, 0.3);
-}
-
-.park.second {
-  fill: rgba(119, 131, 109, 0.22);
-}
-
-.road {
-  fill: none;
-  stroke: rgba(86, 104, 120, 0.38);
-  stroke-width: 1.15;
-  stroke-linecap: round;
-}
-
-.road.major {
-  stroke: rgba(23, 20, 17, 0.38);
-  stroke-width: 1.6;
-}
-
-.mapLabel,
-.schoolLabel {
-  fill: rgba(23, 20, 17, 0.62);
+.mapFallback span,
+.mapFallback em {
+  position: absolute;
+  color: rgba(23, 20, 17, 0.58);
   font-family: var(--mono);
-  font-size: 3px;
+  font-size: 0.68rem;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mapFallback span:nth-child(1) {
+  left: 10%;
+  top: 24%;
+}
+
+.mapFallback span:nth-child(2) {
+  left: 47%;
+  top: 42%;
+}
+
+.mapFallback span:nth-child(3) {
+  left: 30%;
+  top: 72%;
+}
+
+.mapFallback span:nth-child(4) {
+  right: 7%;
+  bottom: 17%;
+}
+
+.mapFallback em {
+  right: 18px;
+  bottom: 16px;
+  max-width: 230px;
+  text-align: right;
+}
+
+.leafletShell.tileFailed .leaflet-tile-pane {
+  opacity: 0;
+}
+
+.leaflet-container {
+  background: transparent;
+  font-family: var(--sans);
+}
+
+.leaflet-control-zoom a {
+  color: var(--ink);
+  font-family: var(--mono);
+}
+
+.leaflet-control-attribution {
+  border-top: 1px solid rgba(23, 20, 17, 0.12);
+  background: rgba(255, 253, 248, 0.82);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+}
+
+.numberMarker,
+.schoolLeafletMarker {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(23, 20, 17, 0.28);
+  color: white;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.numberMarker {
+  background: var(--red);
+}
+
+.numberMarkerBorderline {
+  background: var(--bluegrey);
+}
+
+.numberMarkerSelected {
+  width: 40px;
+  height: 40px;
+  border-color: var(--ink);
+  background: var(--red-2);
+  color: white;
+  transform: translate(-3px, -3px);
+}
+
+.schoolLeafletMarker {
+  width: 38px;
+  height: 38px;
+  background: var(--ink);
+  color: var(--paper-2);
+  font-family: var(--display);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.leafletPopup {
+  min-width: 210px;
+}
+
+.leafletPopup strong {
+  display: block;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1.28rem;
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.leafletPopup p {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.popupKicker {
+  margin: 0 0 7px !important;
+  color: var(--muted) !important;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.popupLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.popupLinks a {
+  border: 1px solid rgba(23, 20, 17, 0.22);
+  padding: 6px 8px;
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 0.62rem;
   letter-spacing: 0.04em;
-}
-
-.schoolLabel {
-  fill: var(--ink);
-  font-size: 3.4px;
-}
-
-.schoolMarker rect {
-  fill: var(--ink);
-}
-
-.schoolMarker path {
-  stroke: var(--paper-2);
-  stroke-width: 0.8;
-  stroke-linecap: round;
-}
-
-.pinButton {
-  cursor: pointer;
-  outline: none;
-}
-
-.pinButton path {
-  fill: var(--red);
-  stroke: white;
-  stroke-width: 1;
-  filter: drop-shadow(0 3px 3px rgba(23, 20, 17, 0.28));
-}
-
-.pinButton circle {
-  fill: white;
-}
-
-.pinButton:hover path,
-.pinButton:focus path,
-.selectedPin path {
-  fill: var(--red-2);
-  stroke: var(--ink);
-  stroke-width: 1.35;
-}
-
-.selectedPin {
-  transform-box: fill-box;
-  transform-origin: center;
+  text-transform: uppercase;
 }
 
 .mapAside {
   display: flex;
-  min-height: 360px;
+  min-height: 420px;
   flex-direction: column;
   justify-content: center;
   border: 1px solid rgba(23, 20, 17, 0.16);
   border-left: 4px solid var(--red);
   padding: clamp(20px, 3vw, 32px);
+}
+
+.mapShell > .mapAside {
+  position: sticky;
+  top: 18px;
 }
 
 .mapAside h3,
@@ -418,6 +520,55 @@ footer {
   display: grid;
 }
 
+.mobileSummaryStrip {
+  display: none;
+}
+
+.mobileSummaryCard {
+  flex: 0 0 min(82vw, 330px);
+  border: 1px solid rgba(23, 20, 17, 0.16);
+  border-top: 4px solid var(--ink);
+  background: rgba(255, 253, 248, 0.78);
+  padding: 14px;
+  text-align: left;
+}
+
+.mobileSummaryCard h3 {
+  margin: 5px 0 0;
+  font-family: var(--display);
+  font-size: 1.65rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.mobileSummaryCard p:not(.kicker) {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.activeMobileSummary {
+  border-color: var(--red);
+  border-top-color: var(--red);
+  box-shadow: 0 18px 46px rgba(163, 52, 38, 0.12);
+}
+
+.summaryLinks {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.summaryLinks a {
+  border: 1px solid rgba(23, 20, 17, 0.18);
+  padding: 6px 8px;
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .listingGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -441,6 +592,14 @@ footer {
   border-color: var(--red);
   transform: translateY(-2px);
   box-shadow: 0 24px 60px rgba(163, 52, 38, 0.14);
+}
+
+.borderlineCard {
+  background: rgba(255, 253, 248, 0.56);
+}
+
+.borderlineLead {
+  margin-top: clamp(34px, 6vw, 68px);
 }
 
 .cardHeader {
@@ -520,7 +679,8 @@ dd {
   margin-top: 18px;
 }
 
-.linkRow a {
+.linkRow a,
+.linkRow button {
   min-height: 34px;
   padding: 8px 10px;
   background: transparent;
@@ -569,6 +729,50 @@ td a {
   color: var(--red);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.auditGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.auditCard {
+  border-top: 4px solid var(--ink);
+  background: rgba(255, 253, 248, 0.64);
+  padding: 18px;
+  box-shadow: 0 18px 54px rgba(23, 20, 17, 0.06);
+}
+
+.auditCard h3 {
+  margin: 0 0 14px;
+  font-family: var(--display);
+  font-size: clamp(1.7rem, 3vw, 2.45rem);
+  font-weight: 500;
+  line-height: 0.98;
+}
+
+.auditCard p,
+.auditCard li {
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.auditCard ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.auditLabel {
+  margin: 16px 0 4px;
+  color: var(--red) !important;
+  font-family: var(--mono);
+  font-size: 0.65rem !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .adviceBand {
@@ -648,6 +852,33 @@ footer p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .auditGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mapShell > .mapAside {
+    display: none;
+  }
+
+  .leafletShell {
+    height: 520px;
+    min-height: 520px;
+  }
+
+  .mobileSummaryStrip {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    overflow-x: auto;
+    padding: 2px 0 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobileSummaryCard {
+    scroll-snap-align: start;
+  }
+
   .sourceLinks {
     justify-content: flex-start;
   }
@@ -672,16 +903,67 @@ footer p {
     grid-template-columns: 1fr;
   }
 
+  .filterBand {
+    gap: 10px;
+    padding-top: 14px;
+  }
+
+  .filterScroller {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filterGroup {
+    width: max-content;
+    min-width: 100%;
+    flex-wrap: nowrap;
+  }
+
+  .filterGroup button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
   .facts {
     grid-template-columns: 1fr;
   }
 
-  .mapCanvas,
-  .mapCanvas svg {
+  .leafletShell {
+    height: 390px;
     min-height: 390px;
   }
 
-  .filterGroup button {
-    flex: 1 1 auto;
+  .leaflet-control-attribution {
+    max-width: 210px;
+  }
+
+  .numberMarker {
+    width: 30px;
+    height: 30px;
+    font-size: 0.62rem;
+  }
+
+  .numberMarkerSelected {
+    width: 36px;
+    height: 36px;
+  }
+
+  .schoolLeafletMarker {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .auditGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tableWrap {
+    margin-inline: calc(var(--edge) * -0.35);
+  }
+
+  table {
+    min-width: 760px;
   }
 }
