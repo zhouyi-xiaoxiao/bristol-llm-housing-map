@@ -359,14 +359,11 @@ footer {
   display: grid;
   overflow: hidden;
   background:
-    linear-gradient(155deg, transparent 0 44%, rgba(127, 163, 160, 0.42) 44.4% 51%, transparent 51.4%),
-    linear-gradient(35deg, transparent 0 52%, rgba(119, 131, 109, 0.2) 52.4% 57%, transparent 57.4%),
     linear-gradient(90deg, rgba(23, 20, 17, 0.06) 1px, transparent 1px) 0 0 / 72px 72px,
     linear-gradient(0deg, rgba(23, 20, 17, 0.05) 1px, transparent 1px) 0 0 / 72px 72px,
     #f0eadf;
 }
 
-.mapFallback span,
 .mapFallback em {
   position: absolute;
   color: rgba(23, 20, 17, 0.58);
@@ -375,6 +372,10 @@ footer {
   font-style: normal;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.mapFallback span {
+  display: none;
 }
 
 .mapFallback span:nth-child(1) {
@@ -455,26 +456,6 @@ footer {
   font-size: 0.58rem;
 }
 
-.localPolygon {
-  stroke-opacity: 0.46;
-  fill-opacity: 0.42;
-}
-
-.localGreen {
-  stroke: rgba(119, 131, 109, 0.74);
-  fill: rgba(119, 131, 109, 0.32);
-}
-
-.localWater {
-  stroke: rgba(92, 142, 164, 0.78);
-  fill: rgba(127, 163, 190, 0.46);
-}
-
-.localCampus {
-  stroke: rgba(163, 52, 38, 0.52);
-  fill: rgba(163, 52, 38, 0.08);
-}
-
 .localLine {
   fill: none;
   stroke-linecap: round;
@@ -501,10 +482,18 @@ footer {
   stroke: rgba(92, 142, 164, 0.78);
 }
 
-.tilesEnabled .localPolygon,
-.tilesEnabled .localLine,
-.tilesEnabled .localMapLabel {
-  opacity: 0.28;
+.tilesEnabled:not(.tileFailed) .localLine,
+.tilesEnabled:not(.tileFailed) .localMapLabel,
+.tilesEnabled:not(.tileFailed) .localMapAttribution {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tileFailed .localLine,
+.tileFailed .localMapLabel,
+.localMap .localLine,
+.localMap .localMapLabel {
+  opacity: 1;
 }
 
 .localMapLabel {

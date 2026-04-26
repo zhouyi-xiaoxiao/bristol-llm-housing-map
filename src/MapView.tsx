@@ -77,12 +77,6 @@ function lineStyle(kind: string): L.PolylineOptions {
   return { className: "localLine localWaterway", weight: 2.2 };
 }
 
-function polygonStyle(kind: string): L.PathOptions {
-  if (kind === "water") return { className: "localPolygon localWater", weight: 0.6 };
-  if (kind === "campus") return { className: "localPolygon localCampus", weight: 0.8 };
-  return { className: "localPolygon localGreen", weight: 0.6 };
-}
-
 function popupHtml(listing: Listing) {
   return `
     <div class="leafletPopup">
@@ -104,7 +98,7 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
   const localLayerRef = useRef<L.LayerGroup | null>(null);
   const markerLayerRef = useRef<L.MarkerClusterGroup | null>(null);
   const markerRefs = useRef<Record<string, L.Marker>>({});
-  const [tilesEnabled, setTilesEnabled] = useState(false);
+  const [tilesEnabled, setTilesEnabled] = useState(true);
   const [tileFailed, setTileFailed] = useState(false);
 
   const bounds = useMemo(() => {
@@ -124,26 +118,17 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
       zoomControl: true,
     });
 
-    map.createPane("localPolygonPane");
     map.createPane("localLinePane");
     map.createPane("localLabelPane");
     map.createPane("schoolPane");
-    const polygonPane = map.getPane("localPolygonPane");
     const linePane = map.getPane("localLinePane");
     const labelPane = map.getPane("localLabelPane");
     const schoolPane = map.getPane("schoolPane");
-    if (polygonPane) polygonPane.style.zIndex = "250";
-    if (linePane) linePane.style.zIndex = "260";
-    if (labelPane) labelPane.style.zIndex = "265";
+    if (linePane) linePane.style.zIndex = "185";
+    if (labelPane) labelPane.style.zIndex = "190";
     if (schoolPane) schoolPane.style.zIndex = "670";
 
     const localLayer = L.layerGroup().addTo(map);
-    localBasemap.polygons.forEach((polygon) => {
-      L.polygon(
-        polygon.p.map(([lat, lng]) => [lat, lng] as L.LatLngTuple),
-        { ...polygonStyle(polygon.k), pane: "localPolygonPane", interactive: false },
-      ).addTo(localLayer);
-    });
     localBasemap.lines.forEach((line) => {
       L.polyline(
         line.p.map(([lat, lng]) => [lat, lng] as L.LatLngTuple),
@@ -297,6 +282,12 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
     window.setTimeout(() => map.invalidateSize(), 80);
   }, [listings.length]);
 
+  const mapModeText = tilesEnabled
+    ? tileFailed
+      ? "Online tiles unavailable · local line fallback visible"
+      : "Online street map · local fallback hidden"
+    : "Local line fallback · no external map request";
+
   return (
     <div className={`leafletShell ${tilesEnabled ? "tilesEnabled" : "localMap"} ${tileFailed ? "tileFailed" : ""}`}>
       <div className="mapFallback" aria-hidden="true">
@@ -304,14 +295,14 @@ export function MapView({ listings, selectedId, onSelect }: MapViewProps) {
         <span>City Centre</span>
         <span>Harbourside</span>
         <span>Temple / Redcliffe</span>
-        <em>{tilesEnabled && tileFailed ? "Online tiles unavailable · local OSM vector map still works" : "Local OSM vector map · no external map request"}</em>
+        <em>{mapModeText}</em>
       </div>
       <div ref={containerRef} className="leafletMap" aria-label="Interactive Bristol housing map" />
       <a className="localMapAttribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
         © OpenStreetMap contributors
       </a>
       <button className="tileToggle" type="button" onClick={() => setTilesEnabled((value) => !value)}>
-        {tilesEnabled ? "回到本地地图" : "加载在线街道图"}
+        {tilesEnabled ? "切换本地兜底" : "加载在线真实地图"}
       </button>
     </div>
   );
