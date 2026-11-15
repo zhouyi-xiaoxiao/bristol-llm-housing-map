@@ -7,6 +7,7 @@ import {
   googleMapsUrl,
   listings,
   sourceAudit,
+  sourceLink,
   type CategoryId,
   type Listing,
   verificationLinks,
@@ -113,6 +114,7 @@ function ListingCard({
           <span key={tag}>{tag}</span>
         ))}
         {listing.verifyLive && <span className="warnTag">签约前实时确认</span>}
+        {listing.sourceGone && <span className="warnTag">原房源页已下架</span>}
         {listing.borderline && <span className="warnTag">超过/接近 20 分钟</span>}
       </div>
       <div className="linkRow">
@@ -125,8 +127,8 @@ function ListingCard({
         <a href={googleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
           Google backup
         </a>
-        <a href={listing.sourceUrl} target="_blank" rel="noreferrer">
-          {listing.sourceLabel}
+        <a href={sourceLink(listing).url} target="_blank" rel="noreferrer">
+          {sourceLink(listing).label}
         </a>
       </div>
     </article>
@@ -161,6 +163,7 @@ function SelectedSummary({
         <span>{selected.walk}</span>
         <span>{selected.price}</span>
         <span>{sourceStatusLabel(selected)}</span>
+        {selected.sourceGone && <span className="goneFact">原房源页已下架</span>}
       </div>
       <div className="linkRow stackedLinks">
         <a href={appleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
@@ -169,8 +172,8 @@ function SelectedSummary({
         <a href={googleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
           Google Maps 备用
         </a>
-        <a href={selected.sourceUrl} target="_blank" rel="noreferrer">
-          来源页面
+        <a href={sourceLink(selected).url} target="_blank" rel="noreferrer">
+          来源 · {sourceLink(selected).label}
         </a>
       </div>
     </aside>
@@ -204,6 +207,7 @@ function MobileDetailPanel({
         <span>{selected.walk}</span>
         <span>{selected.price}</span>
         <span>{sourceStatusLabel(selected)}</span>
+        {selected.sourceGone && <span className="goneFact">原房源页已下架</span>}
       </div>
       <div className="linkRow stackedLinks">
         <a href={appleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
@@ -212,8 +216,8 @@ function MobileDetailPanel({
         <a href={googleMapsUrl(selected.origin)} target="_blank" rel="noreferrer">
           Google Maps 备用
         </a>
-        <a href={selected.sourceUrl} target="_blank" rel="noreferrer">
-          来源 · {selected.sourceLabel}
+        <a href={sourceLink(selected).url} target="_blank" rel="noreferrer">
+          来源 · {sourceLink(selected).label}
         </a>
       </div>
     </section>
@@ -281,7 +285,7 @@ function ApplicationGuide() {
         </article>
 
         <article className="applicationCard deadlineCard">
-          <p className="kicker">2026 entry dates</p>
+          <p className="kicker">2026 entry dates · 已过</p>
           <h3>关键日期</h3>
           <dl className="deadlineFacts">
             <div>
@@ -300,6 +304,13 @@ function ApplicationGuide() {
           <p>
             官方 guarantee 对 overseas-fee、first-year、new full-time postgraduate、unaccompanied
             申请者更友好；如果是 single 状态，不要把 family/couples accommodation 当作主要方案。
+          </p>
+          <p className="pastNote">
+            以上是 2026 年 9 月入学的日期，均已过去。之后的年份以官方{" "}
+            <a href="https://www.bristol.ac.uk/accommodation/apply/key-dates/" target="_blank" rel="noreferrer">
+              Key dates
+            </a>{" "}
+            页面为准。
           </p>
         </article>
       </div>
@@ -322,11 +333,16 @@ export default function App() {
   const [selectedId, setSelectedId] = useState("college-house");
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Main listings first, borderline after, so the map, cards and table count 1, 2, 3… without gaps.
   const visibleListings = useMemo(() => {
-    return listings.filter((listing) => {
+    const matching = listings.filter((listing) => {
       const categoryMatch = category === "all" || listing.category === category;
       return categoryMatch && matchesQuickFilter(listing, quickFilter);
     });
+    return [
+      ...matching.filter((listing) => !listing.borderline),
+      ...matching.filter((listing) => listing.borderline),
+    ];
   }, [category, quickFilter]);
 
   const topPicks = listings.filter((listing) => listing.topPick);
@@ -364,12 +380,14 @@ export default function App() {
             周易潇潇
             <span>zhouyixiaoxiao</span>
           </a>
-          <div className="socials">视频号 · 小红书 · LinkedIn</div>
+          <a className="socials homeLink" href="https://zhouyixiaoxiao.com/">
+            zhouyixiaoxiao.com ↗
+          </a>
         </nav>
 
         <section className="heroGrid" id="top">
           <div className="heroCopy">
-            <p className="kicker">Bristol LLM Housing · Last checked 27 April 2026</p>
+            <p className="kicker">Bristol LLM Housing · 2026/27 entry · Last checked 27 April 2026</p>
             <h1>
               Bristol
               <em> LLM housing</em>
@@ -380,6 +398,16 @@ export default function App() {
               University of Bristol Law School / Wills Memorial Building 为中心，主列表保留步行约 20
               分钟以内，略远但有参考价值的放入边界备选。
             </p>
+            <div className="editionNote">
+              <p>
+                这是为 2026 年 9 月入学整理的版本：房源、价格和申请日期都核对于 2026 年 4 月 27 日，之后没有再更新，现在只适合当作参照。2026
+                年 11 月 15 日复查过全部链接，已下架的房源页改链到网页存档或房源方首页。
+              </p>
+              <p lang="en">
+                A Chinese-language housing map for international Master of Laws students at the University of Bristol,
+                made for September 2026 entry. Listings and prices as checked on 27 April 2026; not updated since.
+              </p>
+            </div>
             <div className="heroActions">
               <a href="#map">看地图</a>
               <a href="#listings">看全部房源</a>
@@ -582,9 +610,21 @@ export default function App() {
       </section>
 
       <footer>
-        <div>
+        <div className="colophon">
           <strong>周易潇潇 / zhouyixiaoxiao</strong>
-          <p>视频号 · 小红书 · LinkedIn</p>
+          <p>
+            2026 年 4 月制作 · 数据核对 2026-04-27
+            <br />
+            链接复查 2026-11-15 ·{" "}
+            <a href="https://github.com/zhouyi-xiaoxiao/bristol-llm-housing-map" target="_blank" rel="noreferrer">
+              源代码
+            </a>
+          </p>
+          <p>
+            <a className="homeLink" href="https://zhouyixiaoxiao.com/">
+              Xiaoxiao Zhouyi · zhouyixiaoxiao.com
+            </a>
+          </p>
         </div>
         <div className="sourceLinks">
           {verificationLinks.map((link) => (

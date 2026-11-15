@@ -21,6 +21,13 @@ export type Listing = {
   topPick?: boolean;
   verifyLive?: boolean;
   borderline?: boolean;
+  /** Set when the original listing page has been taken down since the data check. */
+  sourceGone?: {
+    checked: string;
+    archiveUrl?: string;
+    archiveDate?: string;
+    fallbackUrl?: string;
+  };
   lat: number;
   lng: number;
 };
@@ -88,6 +95,18 @@ export const verificationLinks = [
     url: "https://www.openstreetmap.org/copyright",
   },
 ];
+
+/** Where a listing's source link should point today, and what to call it. */
+export function sourceLink(listing: Listing) {
+  const gone = listing.sourceGone;
+  if (gone?.archiveUrl) {
+    return { url: gone.archiveUrl, label: `${listing.sourceLabel} · 存档 ${gone.archiveDate}` };
+  }
+  if (gone?.fallbackUrl) {
+    return { url: gone.fallbackUrl, label: `${listing.sourceLabel} 首页` };
+  }
+  return { url: listing.sourceUrl, label: listing.sourceLabel };
+}
 
 export function appleMapsUrl(origin: string) {
   const params = new URLSearchParams({
@@ -715,6 +734,12 @@ export const listings: Listing[] = [
     priority: 5,
     tags: ["SU", "全包", "最近"],
     topPick: true,
+    sourceGone: {
+      checked: "2026-11-15",
+      archiveUrl:
+        "https://web.archive.org/web/20260608055611/https://www.bristolsulettings.co.uk/properties-to-let/property/3157-44a-queens-road-clifton-bristol",
+      archiveDate: "2026-06",
+    },
     lat: 51.4566,
     lng: -2.6053,
   },
@@ -776,6 +801,12 @@ export const listings: Listing[] = [
     note: "性价比很高，适合单人 LLM；重点看面积、采光和噪音。",
     priority: 4,
     tags: ["SU", "预算友好", "全包"],
+    sourceGone: {
+      checked: "2026-11-15",
+      archiveUrl:
+        "https://web.archive.org/web/20260519133739/https://www.bristolsulettings.co.uk/properties-to-let/property/2995-park-street-bristol",
+      archiveDate: "2026-05",
+    },
     lat: 51.4545,
     lng: -2.6027,
   },
@@ -796,6 +827,12 @@ export const listings: Listing[] = [
     note: "更像正常住家的 1B1B；2026/27 可租情况需邮件确认。",
     priority: 4,
     tags: ["SU", "1B1B", "需确认"],
+    sourceGone: {
+      checked: "2026-11-15",
+      archiveUrl:
+        "https://web.archive.org/web/20260214020932/https://www.bristolsulettings.co.uk/properties-to-let/property/2862-park-row-bristol",
+      archiveDate: "2026-02",
+    },
     lat: 51.4554406,
     lng: -2.6006198,
   },
@@ -981,6 +1018,10 @@ export const listings: Listing[] = [
     priority: 4,
     tags: ["市中心", "Studio"],
     verifyLive: true,
+    sourceGone: {
+      checked: "2026-11-15",
+      fallbackUrl: "https://www.bristolpropertycentre.co.uk/",
+    },
     lat: 51.4535145,
     lng: -2.5935229,
   },

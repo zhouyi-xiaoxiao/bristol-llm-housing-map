@@ -165,6 +165,39 @@ footer {
   margin-top: 30px;
 }
 
+/* Edition note: says which intake this map was made for and when it was checked. */
+.editionNote {
+  max-width: 740px;
+  margin-top: 22px;
+  border-left: 3px solid var(--red);
+  padding: 4px 0 4px 16px;
+}
+
+.editionNote p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+.editionNote p[lang="en"] {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.homeLink {
+  text-decoration: underline;
+  text-decoration-color: rgba(23, 20, 17, 0.28);
+  text-underline-offset: 4px;
+}
+
+.homeLink:hover {
+  color: var(--red);
+  text-decoration-color: currentColor;
+}
+
 .heroActions a,
 .linkRow a,
 .linkRow button,
@@ -729,6 +762,10 @@ footer {
   display: grid;
 }
 
+.miniFacts .goneFact {
+  color: var(--red);
+}
+
 /* Mobile detail panel — shown ≤1020px in place of the desktop .mapAside.
    Mirrors SelectedSummary's information layers (kicker, name, note,
    miniFacts with sourceStatusLabel, three stacked links incl. official source). */
@@ -807,6 +844,20 @@ footer {
 .applicationCard p {
   color: var(--ink-2);
   line-height: 1.75;
+}
+
+.applicationCard .pastNote {
+  margin: 0;
+  border-top: 1px solid rgba(23, 20, 17, 0.14);
+  padding-top: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.pastNote a {
+  color: var(--red);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .deadlineFacts {
@@ -1093,6 +1144,17 @@ footer strong {
 footer p {
   margin: 8px 0 0;
   color: var(--muted);
+}
+
+.colophon a {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-color: rgba(23, 20, 17, 0.28);
+  text-underline-offset: 4px;
+}
+
+.colophon a:hover {
+  color: var(--red);
 }
 
 .sourceLinks {
