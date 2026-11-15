@@ -1,8 +1,16 @@
 # Bristol LLM Housing Map
 
-中国 LLM 留学生在 Bristol 找住宿的辅助地图。以 University of Bristol Law School / Wills Memorial Building 为中心，汇总步行 ~20 分钟以内的 PBSA、大学官方 residence、社会房源，配合一份「来源审计」说明每条数据从哪儿来。
+**在线地图：<https://zhouyi-xiaoxiao.github.io/bristol-llm-housing-map/>**
 
-最近一次数据复核：2026-04-27。
+给去 University of Bristol 读 LLM 的中国留学生的找房地图。以 Law School / Wills Memorial Building 为中心，收录步行约 20 分钟以内的 studio 和 one-bedroom 房源，共 45 条：大学官方 residence、私营学生公寓（PBSA）、Bristol SU Lettings 和社会房源。每条都标明信息来自哪里，另附大学官方住宿的申请步骤和一份「来源审计」，说明哪些纳入、哪些放进边界备选、哪些排除以及原因。
+
+A Chinese-language housing map for international Master of Laws students at the University of Bristol: 45 studio and one-bedroom options within about twenty minutes' walk of the Law School, each tagged with where its information came from.
+
+- 适用：2026 年 9 月入学（2026/27 学年）。
+- 数据核对：2026-04-27，之后没有再更新；价格、房态和申请日期都以那天为准。
+- 链接复查：2026-11-15。已下架的房源页改链到网页存档或房源方首页，并在页面上注明。
+
+Xiaoxiao Zhouyi · [zhouyixiaoxiao.com](https://zhouyixiaoxiao.com/)
 
 ## 5 分钟跑起来
 
@@ -28,7 +36,7 @@ npm run preview    # 本地预览 build 产物
 src/
 ├── App.tsx              主 UI、状态、各 section（hero、filter、map、application、listings、table、audit）
 ├── MapView.tsx          Leaflet + markercluster 地图组件（marker 三段式 effect）
-├── data.ts              17 条房源数据 + Listing 类型 + categories + sourceAudit + applicationLinks
+├── data.ts              45 条房源数据 + Listing 类型 + categories + sourceAudit + applicationLinks
 ├── localBasemap.ts      离线 polylines/labels 兜底（在线 tile 失败时用）
 ├── styles.css           所有样式（无 Tailwind / CSS-in-JS）
 └── main.tsx             Vite 入口
@@ -46,7 +54,6 @@ src/
 - 桌面端右侧详情面板（`SelectedSummary`）
 - 移动端详情面板（`MobileDetailPanel`，复用桌面信息层级）
 - 修复：移动端二次点击不再回弹到 listing 总图（marker effect 三段拆分）
-- AI-native 文档（CLAUDE.md、tasks/）
 
 待做（见 `tasks/STATE.md`）：
 - Tile 偏好持久化（localStorage）
