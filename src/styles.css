@@ -306,6 +306,11 @@ footer {
   color: var(--paper-2);
 }
 
+.borderlineToggle,
+.linkRow .shortLabel {
+  display: none;
+}
+
 .mapBand,
 .applicationBand,
 .listingBand,
@@ -1064,6 +1069,7 @@ td a {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+  align-items: start;
 }
 
 .auditCard {
@@ -1245,15 +1251,14 @@ footer p {
   }
 
   .filterScroller {
-    overflow-x: auto;
+    overflow-x: visible;
     padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
   }
 
   .filterGroup {
-    width: max-content;
-    min-width: 100%;
-    flex-wrap: nowrap;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
   }
 
   .filterGroup button {
@@ -1262,7 +1267,50 @@ footer p {
   }
 
   .facts {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .borderlineToggle {
+    display: inline-block;
+    margin: 0 0 16px;
+    border: 1px solid var(--ink);
+    padding: 9px 12px;
+    background: var(--ink);
+    color: var(--paper-2);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .borderlineListingGrid:not(.isExpanded) {
+    display: none;
+  }
+
+  .listingCard .linkRow {
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  .listingCard .linkRow a,
+  .listingCard .linkRow button {
+    min-width: 0;
+    flex: 1 1 0;
+    overflow: hidden;
+    padding: 7px 4px;
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .listingCard .linkRow .longLabel {
+    display: none;
+  }
+
+  .listingCard .linkRow .shortLabel {
+    display: inline;
   }
 
   .leafletShell {

@@ -85,7 +85,11 @@ function ListingCard({
           </p>
           <h3>{listing.name}</h3>
         </div>
-        <div className="rating" aria-label={`${listing.priority} out of 5 priority`}>
+        <div
+          className="rating"
+          aria-label={`推荐度 ${listing.priority}/5`}
+          title={`推荐度 ${listing.priority}/5`}
+        >
           {stars(listing.priority)}
         </div>
       </div>
@@ -119,16 +123,17 @@ function ListingCard({
       </div>
       <div className="linkRow">
         <button type="button" onClick={() => onSelect(listing.id, { scroll: false })}>
-          定位地图
+          定位<span className="longLabel">地图</span>
         </button>
         <a href={appleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
-          Apple Maps
+          Apple<span className="longLabel"> Maps</span>
         </a>
         <a href={googleMapsUrl(listing.origin)} target="_blank" rel="noreferrer">
-          Google backup
+          Google<span className="longLabel"> backup</span>
         </a>
-        <a href={sourceLink(listing).url} target="_blank" rel="noreferrer">
-          {sourceLink(listing).label}
+        <a href={sourceLink(listing).url} target="_blank" rel="noreferrer" title={sourceLink(listing).label}>
+          <span className="longLabel">{sourceLink(listing).label}</span>
+          <span className="shortLabel">来源</span>
         </a>
       </div>
     </article>
@@ -331,6 +336,7 @@ export default function App() {
   const [category, setCategory] = useState<Filter>("all");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [selectedId, setSelectedId] = useState("college-house");
+  const [showBorderlineMobile, setShowBorderlineMobile] = useState(false);
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Main listings first, borderline after, so the map, cards and table count 1, 2, 3… without gaps.
@@ -387,14 +393,14 @@ export default function App() {
 
         <section className="heroGrid" id="top">
           <div className="heroCopy">
-            <p className="kicker">Bristol LLM Housing · 2026/27 entry · Last checked 27 April 2026</p>
+            <p className="kicker">Bristol LLM (Master of Laws) housing · 2026/27 entry · Last checked 27 April 2026</p>
             <h1>
               Bristol
               <em> LLM housing</em>
               <span> within 20 minutes</span>
             </h1>
             <p className="intro">
-              面向中国 international LLM 的 Studio + 1B1B / one-bedroom flat 筛选。以上课点
+              面向中国 international LLM（法学硕士，Master of Laws）学生的 Studio + 1B1B / one-bedroom flat 筛选。以上课点
               University of Bristol Law School / Wills Memorial Building 为中心，主列表保留步行约 20
               分钟以内，略远但有参考价值的放入边界备选。
             </p>
@@ -506,7 +512,7 @@ export default function App() {
           </p>
           <h2>所有候选房源</h2>
           <p>
-            私营学生公寓和社会房源价格、房态变化很快；页面用来做第一轮筛选，签约前以官网、邮件回复和合同为准。
+            私营学生公寓和社会房源价格、房态变化很快；页面用来做第一轮筛选，签约前以官网、邮件回复和合同为准。步行时间是到 Wills Memorial Building 的估算，出发前以地图 App 的路线为准。卡片右上角的圆点是推荐度，满 5 点为最推荐。
           </p>
         </div>
 
@@ -532,7 +538,21 @@ export default function App() {
               <h2>略远但值得知道</h2>
               <p>这些项目通常超过或接近 20 分钟，保留是为了完整比较；如果每天去 Wills 上课，不建议作为第一选择。</p>
             </div>
-            <div className="listingGrid">
+            {mainListings.length > 0 && (
+              <button
+                className="borderlineToggle"
+                type="button"
+                aria-expanded={showBorderlineMobile}
+                onClick={() => setShowBorderlineMobile((value) => !value)}
+              >
+                {showBorderlineMobile ? "收起边界备选" : `展开 ${borderlineListings.length} 个边界备选`}
+              </button>
+            )}
+            <div
+              className={`listingGrid borderlineListingGrid ${
+                showBorderlineMobile || mainListings.length === 0 ? "isExpanded" : ""
+              }`}
+            >
               {borderlineListings.map((listing) => (
                 <ListingCard
                   key={listing.id}
@@ -598,7 +618,7 @@ export default function App() {
       <section className="adviceBand">
         <div>
           <p className="kicker">International student checks</p>
-          <h2>发邮件/签约前必问</h2>
+          <h2>发邮件 /<br />签约前必问</h2>
         </div>
         <ul className="questionList">
           <li>Do you accept international students without a UK guarantor?</li>

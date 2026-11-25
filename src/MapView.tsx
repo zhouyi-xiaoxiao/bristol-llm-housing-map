@@ -63,7 +63,7 @@ function clusterIcon(cluster: L.MarkerCluster) {
   const size = count >= 20 ? 42 : count >= 10 ? 38 : 34;
   return L.divIcon({
     className: "",
-    html: `<div class="clusterMarker"><span>${count}</span><em>listings</em></div>`,
+    html: `<div class="clusterMarker" role="img" aria-label="${count} listings" title="${count} listings"><span>${count}</span></div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
